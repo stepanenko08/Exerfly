@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="shortcut icon" href="img/logo.png">
+  <title>Exerfly - Підтримка та повернення</title>
+</head>
+<body>
+  <header>
+    <h1><a class="header__title" href="../index.html">EXERFLY</a></h1>
+  </header>
+  <nav>
+    <div class="nav__wrapper">
+      <div class="nav__item"><a href="../index.html">Головна</a></div>
+      <hr class="nav__hr">
+      <div class="nav__item"><a href="phone.html">Купити телефон</a></div>
+      <hr class="nav__hr">
+      <div class="nav__item"><a href="headphones.html">Купити навушники</a></div>
+      <hr class="nav__hr">
+      <div class="nav__item"><a href="laptop.html">Купити ноутбук</a>
+      </div>
+    </div>
+  </nav>
+  <main>
+    <div class="return__wrapper">
+      <div class="return">
+        <h2 class="return__title">Повернення</h2>
+        <p>Ви можете повернути будь-який товар куплений у нашому магазині при дотриманні данних умов:</p>
+        <ol>
+          <li class="return__list-item">Ви маєте чек покупки данного товару;</li>
+          <li class="return__list-item">Товар не був пошкодженний та має продажний вигляд;</li>
+          <li class="return__list-item">З моменту купівлі не пройшло 14 днів.</li>
+        </ol>
+        <p>Якщо ці всі умови дотриманні, то заповніть цю форму та зв'яжіться за нами:</p>
+        <form style="margin-top: 25px;">
+          <fieldset>
+            <legend>Ваші дані</legend>
+            <label for="secondname">Прізвище</label> <br>
+            <input type="text" name="secondname" placeholder="Введіть Ваше прізвище"> <br>
+            <label for="name">Ім'я</label> <br>            
+            <input type="text" name="name" placeholder="Введіть Ваше ім'я"> <br>
+            <label for="surname">По батькові</label> <br>            
+            <input type="text" name="surname" placeholder="Введіть Ваше по батькові"> <br>
+          </fieldset>
+        </form>
+        <form style="margin-top: 25px;">
+          <fieldset>
+            <legend>Дані товару</legend>
+            <label for="tov_name">Назва товару</label> <br>            
+            <input type="text" name="tov_name" placeholder="Введіть назву товару"> <br>
+            <label for="date">Дата покупки</label> <br>            
+            <input type="date" style="width: auto;" name="date"> <br>
+            <label for="bill">Чек</label> <br>            
+            <input type="file" name="bill" style="border: none; width: 400px;" placeholder="Введіть Ваше ім'я"> <br>
+          </fieldset>
+        </form>
+        <a href="#" class="send"><p>Надіслати дані</p></a>
+      </div>
+      <div class="contacts">
+        <h2 class="return__title">Наші конатки</h2>
+        <h3 class="contacts__list-title">Шляхи зв'язатися з нами:</h3>
+        <ul>
+          <li class="contacts__list-item">Ви можете подзвонти з будь-якого оператора України безкоштовно за цим номером (7:00-20:30): <br><a href="tel:+380441234567"><b style="color: #000;">044-123-4567</b></a></li>
+          <li class="contacts__list-item">Можете написати нам на нашу електронну пошту: <br> <a href="mailto:exerflysupport@gmail.com"><b style="color: #000;">exerflysupport@gmail.com</b></a></li>
+          <li class="contacts__list-item">Можете знайти нас за адресою (офіс працює з 7:00 до 20:30 пн-пт, сб-нд вихідні): <br><iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d4113.378322934609!2d30.5008940480624!3d50.43419121909429!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40d4cee571e65467%3A0xef11c9efe7148b89!2z0YPQuy4g0KHQtdC80YzQuCDQn9GA0LDRhdC-0LLRi9GFLCA1OC8xMCwg0JrQuNC10LIsIDAxMDMz!5e1!3m2!1sru!2sua!4v1715531233755!5m2!1sru!2sua" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></li> 
+        </ul>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <h1 class="footer__title">© Всі права захищені 2024</h1>
+  </footer>
+</body>
