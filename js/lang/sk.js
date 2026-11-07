@@ -24,8 +24,8 @@ EXERFLY.LANG.sk = {
     abs: 'Priamy brušný sval', obliques: 'Šikmé brušné svaly', traps: 'Trapézy', lats: 'Najširší chrbtový sval',
     lower_back: 'Driek', glutes: 'Sedacie svaly', quads: 'Štvorhlavý sval', hamstrings: 'Zadné stehenné svaly', calves: 'Lýtka'
   },
-  groups: { legs: 'Nohy a zadok', back: 'Chrbát', chest: 'Hrudník', shoulders: 'Ramená', arms: 'Ruky', core: 'Brucho a stred tela' },
-  equipment: { bodyweight: 'Vlastná váha', dumbbells: 'Jednoručky', barbell: 'Veľká činka', bench: 'Lavica', bar: 'Hrazda', dips: 'Bradlá', machine: 'Stroj', cable: 'Kladka', rack: 'Stojan' },
+  groups: { legs: 'Nohy a zadok', back: 'Chrbát', chest: 'Hrudník', shoulders: 'Ramená', arms: 'Ruky', core: 'Brucho a stred tela', fullbody: 'Celé telo', cardio: 'Kardio' },
+  equipment: { bodyweight: 'Vlastná váha', dumbbells: 'Jednoručky', barbell: 'Veľká činka', bench: 'Lavica', bar: 'Hrazda', dips: 'Bradlá', machine: 'Stroj', cable: 'Kladka', rack: 'Stojan', kettlebell: 'Kettlebell', treadmill: 'Bežecký pás' },
   levels: { 1: 'Začiatočník', 2: 'Mierne pokročilý', 3: 'Pokročilý' },
   ex: {
     'squat': { name: 'Drepy', short: 'Základný cvik na nohy: učí správne ohýbať bedrá a kolená.',
@@ -107,13 +107,20 @@ EXERFLY.LANG.sk = {
       steps: ['Postav sa čelom ku kladke, chyť rukoväť alebo lano.', 'Lakte pritlač k bokom.', 'Vystri ruky dole úplne.', 'Pomaly vráť rukoväť po uhol 90° v lakťoch.'],
       mistakes: ['Lakte odchádzajú od tela', 'Nakláňanie sa nad rukoväť'] },
     'plank': { name: 'Plank', short: 'Statický cvik: držanie rovného tela v opore.',
-      steps: ['Opri sa o predlaktia, lakte pod ramenami.', 'Vystri nohy, telo tvorí rovnú líniu.', 'Spevni brucho a zadok a vydrž.'],
+      steps: ['Opri sa o vystreté ruky alebo o predlaktia, dlane či lakte pod ramenami.', 'Vystri nohy, telo tvorí rovnú líniu.', 'Spevni brucho a zadok a vydrž.'],
       mistakes: ['Prepadnutá panva', 'Panva príliš vysoko', 'Zadržiavanie dychu'] },
     'crunch': { name: 'Skracovačky', short: 'Zdvih trupu v ľahu pre priamy brušný sval.',
       steps: ['Ľahni si na chrbát, kolená pokrčené, chodidlá na zemi.', 'Ruky za hlavou, krk nimi neťahaj.', 'Skrúť trup a zdvihni lopatky od zeme.', 'Pomaly klesni.'],
       mistakes: ['Ťahanie hlavy rukami', 'Zdvih celého trupu švihom'] },
     'hanging-leg-raise': { name: 'Zdvihy nôh vo vise', short: 'Zdvih nôh na hrazde: náročná varianta na spodné brucho.',
       steps: ['Zaves sa na hrazdu na vystretých rukách.', 'Zdvihni nohy aspoň do vodorovnej polohy a podsaď panvu.', 'Pomaly spusti nohy bez hojdania.'],
-      mistakes: ['Hojdanie', 'Zdvih len flexormi bedra bez podsadenia panvy'] }
+      mistakes: ['Hojdanie', 'Zdvih len flexormi bedra bez podsadenia panvy'] },
+    'overhead-squat': {"name": "Drep s činkou nad hlavou", "short": "Drep s činkou držanou nad hlavou: nohy, stabilita ramien a stredu tela.", "steps": ["Drž činku nad hlavou na vystretých rukách, úchop široký.", "Lopatky stiahni k sebe, činka je nad stredom chodidla.", "Klesni do hlbokého drepu, ruky ostávajú vystreté a činka sa nehýbe dopredu.", "Postav sa späť a udrž činku nad hlavou."], "mistakes": ["Činka padá dopredu", "Ohýbanie lakťov", "Trup sa príliš nakláňa"]},
+    'pistol-squat': {"name": "Pištoľový drep", "short": "Drep na jednej nohe, druhá je natiahnutá vpred. Sila aj rovnováha.", "steps": ["Postav sa na jednu nohu, druhú natiahni dopredu.", "Ruky predpaž kvôli rovnováhe.", "Pomaly klesni čo najnižšie, päta stojnej nohy ostáva na zemi.", "Postav sa späť bez dotyku druhej nohy so zemou."], "mistakes": ["Koleno padá dovnútra", "Päta sa dvíha", "Prudký pád do spodnej polohy"]},
+    'kettlebell-deadlift': {"name": "Mŕtvy ťah s kettlebellom", "short": "Zdvih kettlebellu zo zeme: učí správny predklon v bedrách.", "steps": ["Postav sa nad kettlebell, chodidlá na šírku ramien.", "Posuň panvu dozadu a chyť rukoväť oboma rukami, chrbát rovný.", "Postav sa, tlač pätami a vysuň panvu dopredu.", "Pomaly polož kettlebell späť rovnakou dráhou."], "mistakes": ["Guľatý chrbát", "Ťah rukami namiesto nôh", "Kettlebell ďaleko od tela"]},
+    'dumbbell-curl': {"name": "Striedavý bicepsový zdvih s jednoručkami", "short": "Zdvih jednoručiek na biceps striedavo každou rukou.", "steps": ["Postav sa rovno, jednoručky pri bokoch, dlane dopredu.", "Lakte pritlač k telu.", "Ohni jednu ruku a zdvihni jednoručku k ramenu, potom ju pomaly spusti.", "Zopakuj druhou rukou."], "mistakes": ["Hojdanie trupom", "Lakeť ide dopredu", "Príliš rýchle spúšťanie"]},
+    'bicycle-crunch': {"name": "Bicyklové skracovačky", "short": "Skracovačky s rotáciou: lakeť k opačnému kolenu.", "steps": ["Ľahni si na chrbát, ruky za hlavou, nohy zdvihnuté.", "Pritiahni jedno koleno a otoč k nemu opačný lakeť, druhú nohu vystri.", "Plynule vymeň strany ako pri šliapaní na bicykli."], "mistakes": ["Ťahanie hlavy rukami", "Driek sa odlepuje od zeme", "Príliš rýchle tempo"]},
+    'clean-and-jerk': {"name": "Nadhod", "short": "Olympijský zdvih: činka zo zeme na hrudník a potom nad hlavu.", "steps": ["Postav sa k činke, chyť ju o niečo širšie ako ramená, chrbát rovný.", "Výbušne vystri nohy a bedrá a podsadni pod činku do drepu, činka je na ramenách.", "Postav sa, krátko podrep a vyraz činku nad hlavu do výpadu alebo stoja.", "Spoj nohy, ustáľ činku a kontrolovane ju polož."], "mistakes": ["Ťah rukami namiesto nôh", "Činka ďaleko od tela", "Guľatý chrbát pri zdvihu zo zeme"]},
+    'treadmill-run': {"name": "Beh na bežeckom páse", "short": "Rovnomerný beh na páse na vytrvalosť a spaľovanie kalórií.", "steps": ["Začni 5 minútami chôdze na zahriatie.", "Postupne zvýš rýchlosť na pohodlný beh, pri ktorom sa dá rozprávať.", "Dopadaj pod ťažisko, krok krátky a rýchly, ruky ohnuté v lakťoch.", "Na konci spomaľ na chôdzu na 3–5 minút."], "mistakes": ["Držanie sa madiel", "Príliš dlhý krok a dopad na pätu", "Pohľad pod nohy"]}
   }
 };

@@ -24,8 +24,8 @@ EXERFLY.LANG.en = {
     abs: 'Abs', obliques: 'Obliques', traps: 'Traps', lats: 'Lats',
     lower_back: 'Lower back', glutes: 'Glutes', quads: 'Quads', hamstrings: 'Hamstrings', calves: 'Calves'
   },
-  groups: { legs: 'Legs and glutes', back: 'Back', chest: 'Chest', shoulders: 'Shoulders', arms: 'Arms', core: 'Abs and core' },
-  equipment: { bodyweight: 'Bodyweight', dumbbells: 'Dumbbells', barbell: 'Barbell', bench: 'Bench', bar: 'Pull-up bar', dips: 'Dip bars', machine: 'Machine', cable: 'Cable', rack: 'Rack' },
+  groups: { legs: 'Legs and glutes', back: 'Back', chest: 'Chest', shoulders: 'Shoulders', arms: 'Arms', core: 'Abs and core', fullbody: 'Full body', cardio: 'Cardio' },
+  equipment: { bodyweight: 'Bodyweight', dumbbells: 'Dumbbells', barbell: 'Barbell', bench: 'Bench', bar: 'Pull-up bar', dips: 'Dip bars', machine: 'Machine', cable: 'Cable', rack: 'Rack', kettlebell: 'Kettlebell', treadmill: 'Treadmill' },
   levels: { 1: 'Beginner', 2: 'Intermediate', 3: 'Advanced' },
   ex: {
     'squat': { name: 'Squat', short: 'A basic leg exercise that teaches you to bend at the hips and knees correctly.',
@@ -107,13 +107,20 @@ EXERFLY.LANG.en = {
       steps: ['Face the cable and grab the handle or rope.', 'Pin your elbows to your sides.', 'Push down until your arms are fully straight.', 'Let the handle back up slowly to a 90° elbow bend.'],
       mistakes: ['Elbows leaving the body', 'Leaning over the handle'] },
     'plank': { name: 'Plank', short: 'A static hold of a straight body in a forearm plank.',
-      steps: ['Rest on your forearms with elbows under shoulders.', 'Extend your legs so your body forms a straight line.', 'Brace your abs and glutes and hold.'],
+      steps: ['Support yourself on straight arms or on your forearms, hands or elbows under your shoulders.', 'Extend your legs so your body forms a straight line.', 'Brace your abs and glutes and hold.'],
       mistakes: ['Sagging hips', 'Hips too high', 'Holding your breath'] },
     'crunch': { name: 'Crunch', short: 'Lying torso curls for the abs.',
       steps: ['Lie on your back, knees bent, feet on the floor.', 'Hands behind your head, without pulling on your neck.', 'Curl your torso to lift your shoulder blades off the floor.', 'Lower slowly.'],
       mistakes: ['Pulling the head with the hands', 'Jerking the whole torso up'] },
     'hanging-leg-raise': { name: 'Hanging leg raise', short: 'Leg raises on a bar: a tough variation for the lower abs.',
       steps: ['Hang from the bar with straight arms.', 'Raise your legs to horizontal or higher, tucking the pelvis.', 'Lower your legs slowly without swinging.'],
-      mistakes: ['Swinging', 'Lifting with the hip flexors only, no pelvic tuck'] }
+      mistakes: ['Swinging', 'Lifting with the hip flexors only, no pelvic tuck'] },
+    'overhead-squat': {"name": "Overhead squat", "short": "A squat with the bar held overhead: legs plus shoulder and core stability.", "steps": ["Hold the bar overhead with straight arms and a wide grip.", "Squeeze your shoulder blades, keep the bar over mid-foot.", "Sit into a deep squat while the arms stay locked and the bar does not drift forward.", "Stand back up keeping the bar overhead."], "mistakes": ["Bar drifting forward", "Bending the elbows", "Torso leaning too far forward"]},
+    'pistol-squat': {"name": "Pistol squat", "short": "A single-leg squat with the other leg held out in front. Builds strength and balance.", "steps": ["Stand on one leg and extend the other one forward.", "Reach your arms forward for balance.", "Lower slowly as deep as you can, keeping the standing heel down.", "Stand back up without letting the other foot touch the floor."], "mistakes": ["Knee caving in", "Heel lifting", "Dropping into the bottom"]},
+    'kettlebell-deadlift': {"name": "Kettlebell deadlift", "short": "Lifting a kettlebell from the floor: teaches a proper hip hinge.", "steps": ["Stand over the kettlebell, feet shoulder-width apart.", "Push your hips back and grip the handle with both hands, back straight.", "Stand up driving through your heels and bringing the hips forward.", "Lower the kettlebell slowly along the same path."], "mistakes": ["Rounded back", "Pulling with the arms instead of the legs", "Kettlebell far from the body"]},
+    'dumbbell-curl': {"name": "Alternating dumbbell curl", "short": "Dumbbell curls for the biceps, one arm at a time.", "steps": ["Stand tall with dumbbells at your sides, palms facing forward.", "Keep your elbows pinned to your sides.", "Curl one dumbbell up to your shoulder, then lower it slowly.", "Repeat with the other arm."], "mistakes": ["Swinging the torso", "Elbow drifting forward", "Lowering too fast"]},
+    'bicycle-crunch': {"name": "Bicycle crunch", "short": "Crunches with a twist: elbow to the opposite knee.", "steps": ["Lie on your back, hands behind your head, legs raised.", "Pull one knee in and rotate the opposite elbow towards it while extending the other leg.", "Switch sides smoothly, like pedalling a bike."], "mistakes": ["Pulling on the head", "Lower back lifting off the floor", "Going too fast"]},
+    'clean-and-jerk': {"name": "Clean and jerk", "short": "An Olympic lift: bar from the floor to the shoulders, then overhead.", "steps": ["Step up to the bar and grip it slightly wider than your shoulders, back straight.", "Explosively extend the legs and hips, then drop under the bar into a squat with the bar on your shoulders.", "Stand up, dip briefly and drive the bar overhead into a split or a stance.", "Bring your feet together, stabilise the bar and lower it under control."], "mistakes": ["Pulling with the arms instead of the legs", "Bar drifting away from the body", "Rounded back off the floor"]},
+    'treadmill-run': {"name": "Treadmill run", "short": "Steady running on a treadmill for endurance and calorie burn.", "steps": ["Start with 5 minutes of walking to warm up.", "Gradually raise the speed to an easy pace at which you can still talk.", "Land under your centre of mass with short, quick steps and bent elbows.", "Finish with 3–5 minutes of walking."], "mistakes": ["Holding the handrails", "Overstriding and heel striking", "Looking down at your feet"]}
   }
 };

@@ -1,0 +1,11 @@
+[
+ {"name":"back_squat","file":"Back_Squat_2.glb","prop":"barbell"},
+ {"name":"dumbbell_curl","file":"Bicep_Curl.glb","prop":"dumbbells"},
+ {"name":"bicycle_crunch","file":"Bicycle_Crunch.glb","prop":"none"},
+ {"name":"clean_and_jerk","file":"Clean_And_Jerk.glb","prop":"barbell","from":105,"to":481},
+ {"name":"treadmill_run","file":"Jog_Forward.glb","prop":"treadmill"},
+ {"name":"kettlebell_deadlift","file":"Kettlebell_Swing.glb","prop":"kettlebell","from":68,"to":103,"pingpong":true},
+ {"name":"overhead_squat","file":"Overhead_Squat.glb","prop":"barbell"},
+ {"name":"pistol_squat","file":"Pistol.glb","prop":"none"},
+ {"name":"plank","file":"Plank.glb","prop":"none"}
+]

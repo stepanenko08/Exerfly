@@ -29,6 +29,7 @@
     return forms[key] || forms.other;
   }
   function fmtRest(r) {
+    if (r == null) return '—';
     const t = T(), [a, b] = Array.isArray(r) ? r : [r, r];
     if (b < 120) return `${a === b ? a : a + '–' + b} ${t.sec}`;
     const m = x => String(+(x / 60).toFixed(1)).replace('.', L().locale === 'en' ? '.' : ',');
@@ -38,6 +39,7 @@
     const t = T();
     if (ex.repsType === 'max') return { v: t.max, note: '' };
     if (ex.repsType === 'sec') return { v: `${ex.reps} ${t.sec}`, note: '' };
+    if (ex.repsType === 'min') return { v: `${ex.reps} ${t.min}`, note: '' };
     if (ex.repsType === 'perSide') return { v: ex.reps, note: t.perSide };
     return { v: ex.reps, note: '' };
   }
