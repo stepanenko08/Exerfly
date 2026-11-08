@@ -19,7 +19,7 @@ EXERFLY.LANG.uk = {
     footer: 'Рекомендації орієнтовні, підбирай вагу під себе.', skip: 'Перейти до вмісту', mainNav: 'Головне меню', homeLabel: 'Exerfly – головна', metaDesc: 'Exerfly — каталог вправ із 3D-анімаціями, технікою та картою задіяних м’язів.', clearSearch: 'Очистити пошук', variant: 'Варіант вправи', breadcrumbs: 'Навігація',
     play: 'Відтворити', pause: 'Пауза', speed: 'Швидкість', glow: 'Підсвітити м’язи', phase: 'Фаза руху',
     character: 'Персонаж', male: 'Чоловік', female: 'Жінка',
-    darkMode: 'Темна тема', showResults: 'Показати', collapseFilters: 'Закрити фільтри', collapse: 'Згорнути меню', expand: 'Розгорнути меню', language: 'Мова', open: 'Відкрити'
+    darkMode: 'Темна тема', loading3d: 'Завантажуємо 3D', favorites: 'Обране', addFav: 'В обране', inFav: 'В обраному', removeFav: 'Прибрати з обраного', favEmptyTitle: 'В обраному поки порожньо', favEmptyHint: 'Натисни на сердечко біля вправи, щоб зберегти її тут.', share: 'Поділитися', linkCopied: 'Посилання скопійовано', prevEx: 'Попередня', nextEx: 'Наступна', exNav: 'Інші вправи', keysHint: 'пробіл — пауза', showResults: 'Показати', collapseFilters: 'Закрити фільтри', collapse: 'Згорнути меню', expand: 'Розгорнути меню', language: 'Мова', open: 'Відкрити'
   },
   muscles: {
     chest: 'Грудні', shoulders: 'Дельти', biceps: 'Біцепс', triceps: 'Трицепс', forearms: 'Передпліччя',

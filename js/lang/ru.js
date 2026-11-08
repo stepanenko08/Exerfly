@@ -19,7 +19,7 @@ EXERFLY.LANG.ru = {
     footer: 'Рекомендации ориентировочные, подбирай вес под себя.', skip: 'Перейти к содержимому', mainNav: 'Главное меню', homeLabel: 'Exerfly – главная', metaDesc: 'Exerfly — каталог упражнений с 3D-анимациями, техникой и картой задействованных мышц.', clearSearch: 'Очистить поиск', variant: 'Вариант упражнения', breadcrumbs: 'Навигация',
     play: 'Воспроизвести', pause: 'Пауза', speed: 'Скорость', glow: 'Подсветить мышцы', phase: 'Фаза движения',
     character: 'Персонаж', male: 'Мужчина', female: 'Женщина',
-    darkMode: 'Тёмная тема', showResults: 'Показать', collapseFilters: 'Закрыть фильтры', collapse: 'Свернуть меню', expand: 'Развернуть меню', language: 'Язык', open: 'Открыть'
+    darkMode: 'Тёмная тема', loading3d: 'Загружаем 3D', favorites: 'Избранное', addFav: 'В избранное', inFav: 'В избранном', removeFav: 'Убрать из избранного', favEmptyTitle: 'В избранном пока пусто', favEmptyHint: 'Нажми на сердечко у упражнения, чтобы сохранить его здесь.', share: 'Поделиться', linkCopied: 'Ссылка скопирована', prevEx: 'Предыдущее', nextEx: 'Следующее', exNav: 'Другие упражнения', keysHint: 'пробел — пауза', showResults: 'Показать', collapseFilters: 'Закрыть фильтры', collapse: 'Свернуть меню', expand: 'Развернуть меню', language: 'Язык', open: 'Открыть'
   },
   muscles: {
     chest: 'Грудные', shoulders: 'Дельты', biceps: 'Бицепс', triceps: 'Трицепс', forearms: 'Предплечья',

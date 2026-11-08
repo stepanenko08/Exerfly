@@ -16,8 +16,18 @@
   };
   const S = {
     lang: LANGS.includes(store.get('exerfly-lang')) ? store.get('exerfly-lang') : DEFAULT_LANG,
-    q: '', group: null, speed: 1, who: store.get('exerfly-character') === 'f' ? 'f' : 'm', glow: false, /* подсветка мышц временно выключена */ muscles: new Set(), equipment: new Set(), levels: new Set(), only3d: false, panel: false, tbCollapsed: null
+    q: '', group: null, speed: 1, who: store.get('exerfly-character') === 'f' ? 'f' : 'm', glow: false, /* подсветка мышц временно выключена */ muscles: new Set(), equipment: new Set(), levels: new Set(), only3d: false, panel: false, tbCollapsed: null, favOnly: false
   };
+  /* избранное — в браузере, как тема и язык */
+  const FAV = new Set((() => { try { return JSON.parse(store.get('exerfly-fav') || '[]'); } catch (e) { return []; } })());
+  const saveFav = () => store.set('exerfly-fav', JSON.stringify([...FAV]));
+  const HEART = '<svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3s-7.6-4.6-9.2-9.4C1.7 7.6 3.9 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.5 3.1 4.4 6.4-1.6 4.8-9.2 9.4-9.2 9.4Z"/></svg>';
+  function toast(msg) {
+    let el = document.getElementById('toast');
+    if (!el) { el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 2200);
+  }
   const L = () => D.LANG[S.lang];
   const T = () => L().ui;
   const exText = ex => L().ex[ex.id] || D.LANG.en.ex[ex.id];
@@ -168,11 +178,12 @@
     ex.equipment.forEach(k => parts.push(L().equipment[k]));
     return norm(parts.join(' | '));
   }
-  const activeCount = () => (S.group ? 1 : 0) + S.muscles.size + S.equipment.size + S.levels.size + (S.only3d ? 1 : 0);
+  const activeCount = () => (S.favOnly ? 1 : 0) + (S.group ? 1 : 0) + S.muscles.size + S.equipment.size + S.levels.size + (S.only3d ? 1 : 0);
   const panelCount = () => S.equipment.size + S.levels.size + (S.only3d ? 1 : 0);
   function filtered() {
     const words = norm(S.q.trim()).split(/\s+/).filter(Boolean);
     let list = D.EXERCISES.filter(ex => {
+      if (S.favOnly && !FAV.has(ex.id)) return false;
       if (S.group && ex.group !== S.group) return false;
       if (S.only3d && !ex.model) return false;
       if (S.levels.size && !S.levels.has(ex.level)) return false;
@@ -353,6 +364,7 @@
     document.getElementById('heromap').innerHTML = bodyMap([...S.muscles], [], { interactive: true });
 
     const groupTabs = `<button type="button" class="pill" data-act="group" data-v="" aria-pressed="${!S.group}">${esc(t.all)} <span class="n">${D.EXERCISES.length}</span></button>
+        <button type="button" class="pill fav-pill" data-act="favonly" aria-pressed="${S.favOnly}">${HEART}${esc(t.favorites)} <span class="n">${FAV.size}</span></button>
         ${D.GROUP_KEYS.map(g => `<button type="button" class="pill" data-act="group" data-v="${g}" aria-pressed="${S.group === g}">${esc(L().groups[g])} <span class="n">${D.EXERCISES.filter(e => e.group === g).length}</span></button>`).join('')}`;
     const pc = panelCount();
     const filterBtn = `<button type="button" class="pill filter-btn" data-act="panel" aria-expanded="${S.panel}" aria-controls="panel">
@@ -383,7 +395,8 @@
 
     const res = document.getElementById('results');
     if (!list.length) {
-      res.innerHTML = `<div class="empty"><h2>${esc(t.nothing)}</h2><p>${esc(t.nothingHint)}</p><button type="button" class="pill" data-act="reset">${esc(t.reset)}</button></div>`;
+      const favEmpty = S.favOnly && !FAV.size;
+      res.innerHTML = favEmpty ? `<div class="empty fav-empty">${HEART}<h2>${esc(t.favEmptyTitle)}</h2><p>${esc(t.favEmptyHint)}</p><button type="button" class="pill" data-act="favonly">${esc(t.all)}</button></div>` : `<div class="empty"><h2>${esc(t.nothing)}</h2><p>${esc(t.nothingHint)}</p><button type="button" class="pill" data-act="reset">${esc(t.reset)}</button></div>`;
     } else if (n) {
       res.innerHTML = `<h2 class="sr-only">${esc(t.found)}: ${list.length}</h2><ul class="grid">${list.map(card).join('')}</ul>`;
     } else {
@@ -404,8 +417,13 @@
         <div class="chips">${chips(ex.muscles.primary, 'hot')}</div>
         <div class="card-foot"><span>${esc(ex.equipment.map(k => L().equipment[k]).join(' · '))}</span>${levelHTML(ex.level)}</div>
       </div>
-    </a></li>`;
+    </a>${favBtn(ex, 'fav-btn')}</li>`;
   }
+  function favBtn(ex, cls) {
+    const on = FAV.has(ex.id), t = T(), name = exText(ex).name;
+    return `<button type="button" class="${cls}" data-act="fav" data-v="${ex.id}" aria-pressed="${on}" aria-label="${esc((on ? t.removeFav : t.addFav) + ': ' + name)}" title="${esc(on ? t.removeFav : t.addFav)}">${HEART}${cls === 'fav-big' ? `<span>${esc(on ? t.inFav : t.addFav)}</span>` : ''}</button>`;
+  }
+  function toggleFav(id) { FAV.has(id) ? FAV.delete(id) : FAV.add(id); saveFav(); }
 
   function toggle(set, v) { set.has(v) ? set.delete(v) : set.add(v); }
   function onCatalogAction(el) {
@@ -416,13 +434,15 @@
     else if (act === 'level') toggle(S.levels, +v);
     else if (act === 'only3d') S.only3d = el.checked;
     else if (act === 'panel') S.panel = !S.panel;
+    else if (act === 'fav') toggleFav(v);
+    else if (act === 'favonly') S.favOnly = !S.favOnly;
     else if (act === 'clear-q') {
       S.q = ''; const inMini = !!el.closest('.mini-search');
       ['q', 'q2'].forEach(id => { const i = document.getElementById(id); if (i) i.value = ''; });
       app.querySelectorAll('[data-act="clear-q"]').forEach(b => { b.hidden = true; });
       document.getElementById(inMini ? 'q2' : 'q').focus({ preventScroll: inMini });
     }
-    else if (act === 'reset') { S.q = ''; S.group = null; S.muscles.clear(); S.equipment.clear(); S.levels.clear(); S.only3d = false; renderCatalog(); return; }
+    else if (act === 'reset') { S.q = ''; S.favOnly = false; S.group = null; S.muscles.clear(); S.equipment.clear(); S.levels.clear(); S.only3d = false; renderCatalog(); return; }
     else return;
     refresh();
     // вернуть фокус на ту же кнопку после перерисовки
@@ -459,17 +479,83 @@
     mv.maxCameraOrbit = `auto 88deg ${camMax(ex.model)}`; mv.cameraOrbit = camOrbit(ex.model);
   });
 
+  // знак логотипа — для экрана загрузки
+  const WING = document.querySelector('.logo-mark') ? document.querySelector('.logo-mark').innerHTML.replace(/class="hot"/g, '') : '';
+
+  /* соседние упражнения: в пределах текущей выборки каталога, если упражнение в ней есть, иначе по всему списку */
+  function neighbours(ex) {
+    let list = filtered(); if (!list.includes(ex)) list = D.EXERCISES;
+    const i = list.indexOf(ex), n = list.length;
+    return n < 2 ? null : { prev: list[(i - 1 + n) % n], next: list[(i + 1) % n] };
+  }
+  function exNav(ex) {
+    const nb = neighbours(ex), t = T(); if (!nb) return '';
+    return `<nav class="ex-nav" aria-label="${esc(t.exNav)}">
+      <a class="ex-nav-link prev" href="#${nb.prev.id}" rel="prev"><span class="dir"><span aria-hidden="true">←</span> ${esc(t.prevEx)}</span><span class="nm">${esc(exText(nb.prev).name)}</span></a>
+      <a class="ex-nav-link next" href="#${nb.next.id}" rel="next"><span class="dir">${esc(t.nextEx)} <span aria-hidden="true">→</span></span><span class="nm">${esc(exText(nb.next).name)}</span></a>
+    </nav>`;
+  }
+  function setupDetail(ex) {
+    const t = T(), x = exText(ex);
+    // избранное
+    const fb = app.querySelector('.fav-big');
+    fb.addEventListener('click', () => { toggleFav(ex.id); fb.outerHTML = favBtn(ex, 'fav-big'); setupFavBig(); });
+    function setupFavBig() { const b = app.querySelector('.fav-big'); b.focus({ preventScroll: true }); b.addEventListener('click', () => { toggleFav(ex.id); b.outerHTML = favBtn(ex, 'fav-big'); setupFavBig(); }); }
+    // поделиться: системное меню на телефоне, иначе — копирование ссылки
+    document.getElementById('share').addEventListener('click', async () => {
+      const url = location.href, data = { title: x.name + ' · Exerfly', text: x.short, url };
+      if (navigator.share && matchMedia('(pointer: coarse)').matches) { try { await navigator.share(data); } catch (e) { /* закрыли меню */ } return; }
+      try { await navigator.clipboard.writeText(url); }
+      catch (e) { const ta = document.createElement('textarea'); ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e2) {} ta.remove(); }
+      toast(t.linkCopied);
+    });
+    // свайп влево/вправо — соседние упражнения (кроме 3D-окна, где свайп поворачивает модель)
+    const nb = neighbours(ex); if (!nb) return;
+    const art = app.querySelector('article'); let sx = 0, sy = 0, st = 0, ok = false;
+    art.addEventListener('touchstart', e => {
+      const tt = e.touches[0]; ok = e.touches.length === 1 && !e.target.closest('.stage, .tabs, input, .chips');
+      sx = tt.clientX; sy = tt.clientY; st = Date.now();
+    }, { passive: true });
+    art.addEventListener('touchend', e => {
+      if (!ok) return; const tt = e.changedTouches[0], dx = tt.clientX - sx, dy = tt.clientY - sy;
+      if (Math.abs(dx) > 80 && Math.abs(dy) < 50 && Date.now() - st < 700) location.hash = (dx < 0 ? nb.next : nb.prev).id;
+    }, { passive: true });
+  }
+
+  /* клавиши на странице упражнения: пробел — пауза, ← → — перемотка */
+  document.addEventListener('keydown', e => {
+    const mv = document.getElementById('mv'); if (!mv || e.altKey || e.ctrlKey || e.metaKey) return;
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+    if (e.key === ' ' || e.code === 'Space') {
+      if (tag === 'button' || tag === 'a') return;                 // пробел на кнопке — нажимает кнопку
+      e.preventDefault(); document.getElementById('pp').click();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const d = mv.duration || 0; if (!d) return;
+      e.preventDefault();
+      const step = (e.shiftKey ? 1 : 0.25) * (e.key === 'ArrowLeft' ? -1 : 1);
+      mv.currentTime = ((mv.currentTime + step) % d + d) % d;
+    }
+  });
+
   /* ---------- страница упражнения ---------- */
   function renderDetail(ex) {
     const t = T(), x = exText(ex), en = D.LANG.en.ex[ex.id];
     document.title = x.name + ' · Exerfly';
     const md = ex.model, reps = fmtReps(ex);
     const stage = md ? `<div class="stage">
+        <div class="loader" id="loader" role="progressbar" aria-label="${esc(t.loading3d)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <svg class="ld-mark" viewBox="0 0 128 128" aria-hidden="true">
+            <defs><clipPath id="ld-clip"><rect id="ld-rect" x="0" y="0" width="0" height="128"/></clipPath></defs>
+            <g class="ld-base">${WING}</g><g class="ld-fill" clip-path="url(#ld-clip)">${WING}</g>
+          </svg>
+          <div class="ld-txt"><span>${esc(t.loading3d)}</span><b id="ld-pct">0%</b></div>
+        </div>
         <model-viewer id="mv" src="${MODELS[S.who]}" animation-name="${md.variants[0].anim}" autoplay camera-controls
           environment-image="neutral" exposure="1.05" shadow-intensity="1.1" shadow-softness="0.9" field-of-view="28deg"
           camera-target="${md.target}" camera-orbit="${camOrbit(md)}" min-camera-orbit="auto 20deg 1.5m" max-camera-orbit="auto 88deg ${camMax(md)}"
           interaction-prompt="none" touch-action="pan-y" alt="${esc(x.name)}"></model-viewer>
-        <span class="hint" aria-hidden="true">${esc(t.drag)}</span>
+        <span class="hint" aria-hidden="true">${esc(t.drag)} · ${esc(t.keysHint)}</span>
         <div class="stage-top">
           <div class="seg who" role="group" aria-label="${esc(t.character)}">
             ${['m', 'f'].map(v => `<button type="button" data-who="${v}" aria-pressed="${S.who === v}">${esc(v === 'm' ? t.male : t.female)}</button>`).join('')}
@@ -501,6 +587,9 @@
         <h1 id="ex-title" tabindex="-1">${esc(x.name)}</h1>
         ${S.lang !== 'en' && en ? `<p class="sub" lang="en">${esc(en.name)}</p>` : ''}
         <p class="lead">${esc(x.short)}</p>
+        <div class="ex-actions">${favBtn(ex, 'fav-big')}
+          <button type="button" class="share-btn" id="share"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg><span>${esc(t.share)}</span></button>
+        </div>
       </header>
       ${stage}
       <div class="ex-body">
@@ -533,9 +622,11 @@
           </section>
         </div>
       </div>
+      ${exNav(ex)}
     </article>`;
     const mv = document.getElementById('mv');
     if (mv) setupPlayer(mv, ex);
+    setupDetail(ex);
   }
 
   /* ---------- плеер: пауза, скорость, фаза, подсветка мышц ---------- */
@@ -549,7 +640,7 @@
     let dragging = false;
     const setPaused = paused => {
       pp.classList.toggle('paused', paused);
-      pp.setAttribute('aria-label', paused ? t.play : t.pause); pp.title = paused ? t.play : t.pause;
+      pp.setAttribute('aria-label', paused ? t.play : t.pause); pp.title = (paused ? t.play : t.pause) + ' (Space)';
     };
     pp.addEventListener('click', () => { if (mv.paused) mv.play(); else mv.pause(); setPaused(mv.paused); });
     scrub.addEventListener('input', () => {
@@ -570,7 +661,7 @@
       if (S.who === b.dataset.who) return;
       S.who = b.dataset.who; store.set('exerfly-character', S.who);
       app.querySelectorAll('.who button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
-      overlay = []; body = null; mv.src = MODELS[S.who]; setPaused(false);
+      overlay = []; body = null; ldDone = false; ld.hidden = false; ld.classList.remove('done'); showProgress(0); mv.src = MODELS[S.who]; setPaused(false);
     }));
 
     let overlay = [], body = null, bodyDim = -1;
@@ -578,7 +669,22 @@
       S.glow = !S.glow; store.set('exerfly-glow', S.glow ? '1' : '0');
       glowBtn.setAttribute('aria-pressed', String(S.glow));
     });
+    // экран загрузки: крылья логотипа заполняются по мере загрузки модели
+    const ld = document.getElementById('loader'), ldRect = document.getElementById('ld-rect'), ldPct = document.getElementById('ld-pct');
+    let ldTimer = 0, ldDone = false;                  // после загрузки модели прогресс окружения/текстур уже не показываем
+    const showProgress = p => {
+      const v = Math.max(0, Math.min(1, p)), pc = Math.round(v * 100);
+      ldRect.setAttribute('width', (v * 128).toFixed(1)); ldPct.textContent = pc + '%'; ld.setAttribute('aria-valuenow', pc);
+    };
+    mv.addEventListener('progress', e => {
+      const p = e.detail.totalProgress;
+      if (ldDone) return;
+      if (p < 1) { clearTimeout(ldTimer); ld.classList.remove('done'); ld.hidden = false; }
+      showProgress(p);
+    });
     mv.addEventListener('load', () => {
+      ldDone = true; showProgress(1); clearTimeout(ldTimer);
+      ldTimer = setTimeout(() => { ld.classList.add('done'); ldTimer = setTimeout(() => { ld.hidden = true; }, 400); }, 250);
       mv.timeScale = S.speed;
       const mats = mv.model ? mv.model.materials : [];
       overlay = mats.filter(m => m.name && m.name.startsWith('M_')).map(m => ({ m, key: m.name.slice(2), a: -1 }));
@@ -624,7 +730,7 @@
   // логотип: сброс всех фильтров и поиска + главная страница сверху
   document.getElementById('logo-link').addEventListener('click', e => {
     e.preventDefault();
-    Object.assign(S, { q: '', group: null, only3d: false, panel: false, tbCollapsed: null });
+    Object.assign(S, { q: '', group: null, only3d: false, panel: false, tbCollapsed: null, favOnly: false });
     S.muscles.clear(); S.equipment.clear(); S.levels.clear();
     catalogScroll = 0;
     if (location.hash.slice(1)) location.hash = '';               // hashchange → route() → каталог

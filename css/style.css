@@ -409,3 +409,61 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .panel.sheet.enter, .sheet-backdrop { animation: none; } }
+
+/* ---------- избранное ---------- */
+.heart { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; transition: transform .2s, fill .2s; }
+.grid > li { position: relative; }
+.fav-btn {
+  position: absolute; top: 16px; right: 16px; z-index: 2; width: 38px; height: 38px; display: grid; place-items: center; padding: 0;
+  border-radius: 50%; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--muted); cursor: pointer;
+}
+.fav-btn:hover { color: var(--ink); }
+.fav-btn[aria-pressed="true"], .fav-big[aria-pressed="true"] { color: var(--heat); }
+.fav-btn[aria-pressed="true"] .heart, .fav-big[aria-pressed="true"] .heart, .fav-pill[aria-pressed="true"] .heart { fill: currentColor; }
+.fav-btn:active .heart, .fav-big:active .heart { transform: scale(.82); }
+.fav-pill .heart { width: 16px; height: 16px; }
+.fav-empty .heart { width: 44px; height: 44px; color: var(--heat); stroke-width: 1.4; margin-bottom: 4px; }
+.ex-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.fav-big, .share-btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px 0 13px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font: 700 14px var(--f-body); cursor: pointer;
+}
+.fav-big:hover, .share-btn:hover { border-color: color-mix(in srgb, var(--ink) 35%, var(--line)); }
+.share-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- всплывающее уведомление ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 80; translate: -50% 16px; opacity: 0; pointer-events: none;
+  padding: 11px 18px; border-radius: 999px; background: var(--ink); color: var(--on-ink); font: 700 14px var(--f-body); box-shadow: var(--shadow);
+  transition: opacity .2s, translate .2s;
+}
+.toast.show { opacity: 1; translate: -50% 0; }
+
+/* ---------- соседние упражнения ---------- */
+.ex-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 28px 0 8px; }
+.ex-nav-link {
+  display: grid; gap: 6px; padding: 18px 20px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface);
+  color: inherit; text-decoration: none; transition: border-color .2s, transform .2s;
+}
+.ex-nav-link:hover { border-color: color-mix(in srgb, var(--ink) 35%, var(--line)); transform: translateY(-2px); }
+.ex-nav-link .dir { font: 600 12px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.ex-nav-link .nm { font: 800 18px/1.25 var(--f-body); letter-spacing: -.01em; }
+.ex-nav-link.next { text-align: right; }
+@media (max-width: 560px) { .ex-nav { gap: 10px; } .ex-nav-link { padding: 14px; } .ex-nav-link .nm { font-size: 15px; } }
+
+/* ---------- экран загрузки 3D: крылья логотипа заполняются ---------- */
+.loader {
+  position: absolute; inset: 0; z-index: 3; display: grid; place-content: center; justify-items: center; gap: 14px;
+  background: radial-gradient(120% 90% at 50% 10%, var(--surface) 0%, var(--surface-2) 70%); transition: opacity .4s ease;
+}
+.loader.done { opacity: 0; pointer-events: none; }
+.ld-mark { width: 112px; height: 112px; overflow: visible; }
+.ld-base path { fill: color-mix(in srgb, var(--ink) 9%, transparent); }
+.ld-fill path { fill: var(--heat); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--heat) 55%, transparent)); }
+.ld-mark path { transform-box: fill-box; transform-origin: 0% 100%; animation: ld-flap 1.4s ease-in-out infinite; }
+.ld-mark g path:nth-child(2) { animation-delay: .12s; } .ld-mark g path:nth-child(3) { animation-delay: .24s; }
+#ld-rect { transition: width .25s ease-out; }
+.ld-txt { display: flex; align-items: baseline; gap: 10px; font: 600 12px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+.ld-txt b { color: var(--ink); font-size: 14px; min-width: 4ch; }
+@keyframes ld-flap { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-4px) rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { .ld-mark path { animation: none; } #ld-rect { transition: none; } .toast { transition: none; } }

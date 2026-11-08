@@ -77,7 +77,7 @@ def sphere(g, c, r, seg=24, rings=14):
 M_IRON = mat('Cast iron', (0.035, 0.035, 0.04), 0.6, 0.55)
 M_RUBBER = mat('Rubber', (0.02, 0.02, 0.022), 0.0, 0.9)
 M_BELT = mat('Belt', (0.03, 0.03, 0.033), 0.0, 0.85)
-M_STRIPE = mat('Belt stripe', (0.10, 0.10, 0.11), 0.0, 0.8)
+M_STRIPE = mat('Belt stripe', (0.065, 0.065, 0.072), 0.0, 0.8)
 M_FRAME = mat('Treadmill frame', (0.045, 0.048, 0.055), 0.35, 0.45)
 M_ACCENT = mat('Accent', (0.95, 0.27, 0.13), 0.1, 0.5)
 M_SCREEN = mat('Screen', (0.01, 0.015, 0.02), 0.2, 0.2)
@@ -132,39 +132,89 @@ def tube(g, p0, p1, r, seg=20):
     p0 = np.asarray(p0, float); p1 = np.asarray(p1, float); d = p1-p0
     g.cyl((p0+p1)/2, d, r, np.linalg.norm(d), seg=seg)
 top = FLOOR+DECK
-tm = Geo(); tf = Geo(); ta = Geo(); ts = Geo(); tal = Geo(); tr = Geo(); tg = Geo()
-tm.box(-BX, BX, FLOOR+0.03, top-0.004, Z0, Z1)                                         # полотно
+def rbox(g, c, size, r, R=np.eye(3), n=4):
+    """Коробка со скруглёнными рёбрами."""
+    h = np.asarray(size, float)/2; r = min(r, *(h*0.999)); inner = h-r; c = np.asarray(c, float)
+    for ax in range(3):
+        for sgn in (-1, 1):
+            u_ax, v_ax = [i for i in range(3) if i != ax]; P = []; N = []
+            for i in range(n+1):
+                for j in range(n+1):
+                    p = np.zeros(3); p[ax] = sgn; a_ = -1+2*i/n; b_ = -1+2*j/n
+                    p[u_ax] = np.sign(a_)*abs(a_)**0.6; p[v_ax] = np.sign(b_)*abs(b_)**0.6
+                    q = p*h; cq = np.clip(q, -inner, inner); d = q-cq
+                    nn = d/np.linalg.norm(d) if np.linalg.norm(d) > 1e-9 else np.eye(3)[ax]*sgn
+                    P.append(R@(cq+r*nn)+c); N.append(R@nn)
+            I = []
+            for i in range(n):
+                for j in range(n):
+                    a0 = i*(n+1)+j; b0 = a0+n+1; tri = [a0, b0, a0+1, a0+1, b0, b0+1]
+                    if (np.cross(np.array(P[b0])-P[a0], np.array(P[a0+1])-P[a0]) @ N[a0]) < 0: tri = [a0, a0+1, b0, a0+1, b0+1, b0]
+                    I += tri
+            g._add(P, N, I)
+def rot_x(deg):
+    a = np.radians(deg); return np.array([[1, 0, 0], [0, np.cos(a), -np.sin(a)], [0, np.sin(a), np.cos(a)]])
+def bar(g, p0, p1, w, h, r, up=(0, 0, 1)):
+    """Скруглённый профиль от p0 до p1 (сечение w × h)."""
+    p0 = np.asarray(p0, float); p1 = np.asarray(p1, float); x = p1-p0; L = np.linalg.norm(x); x /= L
+    u = np.asarray(up, float); u = u-np.dot(u, x)*x; u /= np.linalg.norm(u); z = np.cross(x, u)
+    rbox(g, (p0+p1)/2, (L, h, w), r, np.stack([x, u, z], 1), n=4)
+from pygltflib import Material as GMat
+def emissive(name, rgb):
+    dst.materials.append(GMat(name=name, emissiveFactor=list(rgb), pbrMetallicRoughness=PbrMetallicRoughness(baseColorFactor=[0.02, 0.02, 0.02, 1], metallicFactor=0, roughnessFactor=0.4)))
+    return len(dst.materials)-1
+M_SHELL = mat('Treadmill shell', (0.045, 0.047, 0.052), 0.2, 0.4)           # графитовый пластик
+M_DARK = mat('Treadmill dark', (0.018, 0.019, 0.022), 0.3, 0.5)
+M_LED = emissive('LED accent', (1.0, 0.33, 0.12))
+M_UI = emissive('Screen UI', (0.55, 0.62, 0.70))
+tm, tsh, tdk, tal, tled, tui, tgl, trb = Geo(), Geo(), Geo(), Geo(), Geo(), Geo(), Geo(), Geo()
+SW = 0.075                                                           # ширина боковин
+# полотно
+tm.box(-BX, BX, FLOOR+0.03, top-0.004, Z0, Z1)
+# боковины: низкий обтекаемый корпус + алюминиевые подножки + LED-линия
 for x in (-1, 1):
-    tf.box(x*BX, x*(BX+0.10), FLOOR+0.03, top+0.004, Z0-0.04, Z1+0.06)                # корпус боковин
-    tal.box(x*(BX+0.005), x*(BX+0.105), top+0.004, top+0.016, Z0-0.02, Z1+0.04)        # алюминиевые подножки
-    ta.box(x*(BX+0.098), x*(BX+0.104), top-0.045, top-0.025, Z0+0.10, Z1-0.10)         # оранжевая линия сбоку
-    for z in (Z0+0.02, Z1+0.10): tr.cyl([x*(BX+0.06), FLOOR+0.015, z], [0, 1, 0], 0.03, 0.03)   # ножки
-tr.cyl([0, top-0.045, Z0+0.005], [1, 0, 0], 0.045, 2*BX)                              # задний ролик
-obox(tf, [0, FLOOR+0.06, Z0-0.07], [2*BX+0.20, 0.07, 0.10])                            # задняя крышка
-tf.cyl([0, FLOOR+0.095, Z0-0.07], [1, 0, 0], 0.035, 2*BX+0.20)
-# кожух мотора: скошенный спереди
-obox(tf, [0, top+0.03, Z1+0.16], [2*BX+0.20, 0.16, 0.26])
-obox(tf, [0, top+0.07, Z1+0.33], [2*BX+0.20, 0.10, 0.16], rx=-35)
-ta.box(-BX-0.101, BX+0.101, top+0.075, top+0.09, Z1+0.04, Z1+0.29)                     # полоса на кожухе
-# стойки: наклонены назад к пользователю
+    cx = x*(BX+SW/2)
+    rbox(tsh, [cx, FLOOR+0.012+(DECK+0.0)/2, (Z0+Z1)/2], (SW, DECK+0.0, Z1-Z0+0.06), 0.03)
+    rbox(tal, [cx, top+0.006, (Z0+Z1)/2-0.02], (SW-0.012, 0.012, Z1-Z0-0.06), 0.005)
+    rbox(tled, [x*(BX+SW+0.0005), FLOOR+0.07, (Z0+Z1)/2], (0.004, 0.008, Z1-Z0-0.20), 0.002)
+    for z in (Z0+0.05, Z1-0.05): rbox(trb, [cx, FLOOR+0.006, z], (0.06, 0.012, 0.08), 0.005)
+# задний торец: скруглённая крышка с роликом
+rbox(tsh, [0, FLOOR+0.07, Z0-0.035], (2*(BX+SW), 0.12, 0.08), 0.035)
+rbox(tled, [0, FLOOR+0.07, Z0-0.0755], (2*BX, 0.006, 0.002), 0.001)
+# кожух мотора: мягкий клин, переходящий в стойки
+rbox(tsh, [0, top+0.035, Z1+0.17], (2*(BX+SW), 0.17, 0.36), 0.07)
+rbox(tsh, [0, top+0.075, Z1+0.27], (2*(BX+SW)-0.04, 0.12, 0.22), 0.06, rot_x(-18))
+rbox(tdk, [0, top+0.12, Z1+0.04], (2*BX-0.04, 0.012, 0.10), 0.005, rot_x(-30))   # решётка вентиляции
+for i in range(5): rbox(tsh, [0, top+0.128, Z1+0.005+i*0.018], (2*BX-0.08, 0.004, 0.006), 0.002, rot_x(-30))
+# стойки: тонкие овальные профили с наклоном назад
 for x in (-1, 1):
-    tube(tf, [x*0.39, top+0.08, Z1+0.24], [x*0.37, FLOOR+1.15, Z1+0.10], 0.032)
-    # поручни-петли
-    tube(tf, [x*0.37, FLOOR+1.02, Z1+0.12], [x*0.40, FLOOR+1.02, Z1-0.40], 0.018)
-    tube(tf, [x*0.40, FLOOR+1.02, Z1-0.40], [x*0.40, FLOOR+0.94, Z1-0.48], 0.018)
-    tube(tg, [x*0.40, FLOOR+1.02, Z1-0.10], [x*0.40, FLOOR+1.02, Z1-0.34], 0.024)       # резиновые накладки
-    tube(tal, [x*0.37, FLOOR+1.02, Z1+0.04], [x*0.38, FLOOR+1.02, Z1-0.08], 0.0245)     # датчики пульса
-tube(tf, [-0.37, FLOOR+0.98, Z1+0.10], [0.37, FLOOR+0.98, Z1+0.10], 0.018)             # передний поручень
-# консоль: панель, наклонённая к бегуну
-obox(tf, [0, FLOOR+1.24, Z1+0.10], [0.84, 0.30, 0.07], rx=-28)
-obox(ts, [0, FLOOR+1.255, Z1+0.068], [0.46, 0.17, 0.012], rx=-28)                      # экран
-obox(ta, [0, FLOOR+1.215, Z1+0.050], [0.30, 0.012, 0.004], rx=-28)                     # строка на экране
-obox(ta, [-0.10, FLOOR+1.29, Z1+0.078], [0.10, 0.03, 0.004], rx=-28)
-obox(ta, [0.10, FLOOR+1.29, Z1+0.078], [0.10, 0.03, 0.004], rx=-28)
-for i, x in enumerate((-0.34, -0.30, 0.30, 0.34)):
-    obox(tg if i % 3 else ta, [x, FLOOR+1.20, Z1+0.055], [0.03, 0.03, 0.02], rx=-28)    # кнопки
-for x in (-1, 1): tr.cyl([x*0.30, FLOOR+1.11, Z1+0.10], [0, 1, 0], 0.04, 0.06)          # подстаканники
-TREAD = add_node('Treadmill', add_mesh([(M_BELT, tm), (M_FRAME, tf), (M_ACCENT, ta), (M_GLASS, ts), (M_ALU, tal), (M_RUBBER, tr), (M_RUBBER, tg)]))
+    bar(tsh, [x*0.36, top+0.10, Z1+0.30], [x*0.335, FLOOR+1.12, Z1+0.10], 0.05, 0.075, 0.024, up=(0, 0, 1))
+    rbox(tled, [x*0.384, FLOOR+0.68, Z1+0.20], (0.004, 0.40, 0.012), 0.002, rot_x(-11))
+# консоль: планшет с большим экраном, наклонён к бегуну
+CR = rot_x(45)                                                     # экран под 135° к полотну — смотрит на бегуна
+UP_TOP = np.array([0, FLOOR+1.12, Z1+0.10])                        # верх стоек
+cc = UP_TOP+np.array([0, 0.115, 0])-CR@np.array([0, 0, 0.075])      # консоль сидит прямо на стойках
+rbox(tsh, cc, (0.78, 0.36, 0.06), 0.03, CR)
+# крепление консоли: от верха каждой стойки к задней стенке + центральная «шея»
+for x in (-1, 1):
+    bar(tsh, [x*0.335, FLOOR+1.10, Z1+0.10], cc+CR@np.array([x*0.27, -0.07, 0.03]), 0.05, 0.06, 0.022, up=(0, 0, 1))
+rbox(tsh, cc+CR@np.array([0, -0.06, 0.045]), (0.52, 0.16, 0.05), 0.022, CR)
+rbox(tgl, cc+CR@np.array([0, 0.01, -0.031]), (0.56, 0.28, 0.004), 0.012, CR)        # стекло экрана
+def ui(x, y, w, h, m=tui):
+    rbox(m, cc+CR@np.array([x, y, -0.0335]), (w, h, 0.0015), min(w, h)*0.45, CR)
+ui(0, 0.085, 0.30, 0.012)                                                          # строка статуса
+for i, hgt in enumerate((0.03, 0.05, 0.07, 0.09, 0.06, 0.08, 0.10, 0.07, 0.05, 0.04)):  # график пульса/темпа
+    ui(-0.20+i*0.045, -0.085+hgt/2, 0.026, hgt, tled if i == 6 else tui)
+for x in (-0.17, 0, 0.17): ui(x, 0.02, 0.12, 0.05)                                  # плитки показателей
+# руль: горизонтальная перекладина под консолью + боковые ручки с резиной и датчиками
+bar(tsh, [-0.40, FLOOR+1.04, Z1+0.10], [0.40, FLOOR+1.04, Z1+0.10], 0.045, 0.035, 0.016, up=(0, 1, 0))
+for x in (-1, 1):
+    bar(tsh, [x*0.40, FLOOR+1.04, Z1+0.10], [x*0.42, FLOOR+1.02, Z1-0.30], 0.04, 0.04, 0.018, up=(0, 1, 0))
+    bar(trb, [x*0.415, FLOOR+1.025, Z1-0.06], [x*0.42, FLOOR+1.02, Z1-0.28], 0.046, 0.046, 0.021, up=(0, 1, 0))
+    bar(tal, [x*0.402, FLOOR+1.038, Z1+0.06], [x*0.408, FLOOR+1.035, Z1-0.04], 0.047, 0.047, 0.022, up=(0, 1, 0))
+# держатель телефона/бутылки по бокам консоли
+for x in (-1, 1): rbox(tdk, [x*0.47, FLOOR+1.10, Z1+0.10], (0.10, 0.05, 0.10), 0.02)
+TREAD = add_node('Treadmill', add_mesh([(M_BELT, tm), (M_SHELL, tsh), (M_DARK, tdk), (M_ALU, tal), (M_LED, tled), (M_UI, tui), (M_GLASS, tgl), (M_RUBBER, trb)]))
 # полосы на полотне (двигаются назад и повторяются)
 SP = 0.15; stripes = Geo(); zs = np.arange(Z0+0.03, Z1-0.02, SP)
 for z in zs: stripes.box(-BX+0.01, BX-0.01, FLOOR+DECK-0.005, FLOOR+DECK-0.002, z, z+0.025)

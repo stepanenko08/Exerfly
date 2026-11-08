@@ -19,7 +19,7 @@ EXERFLY.LANG.sk = {
     footer: 'Odporúčania sú orientačné, váhu si prispôsob sebe.', skip: 'Preskočiť na obsah', mainNav: 'Hlavné menu', homeLabel: 'Exerfly – domov', metaDesc: 'Exerfly — katalóg cvikov s 3D animáciami, technikou a mapou zapojených svalov.', clearSearch: 'Vymazať hľadanie', variant: 'Variant cviku', breadcrumbs: 'Navigácia',
     play: 'Prehrať', pause: 'Pozastaviť', speed: 'Rýchlosť', glow: 'Zvýrazniť svaly', phase: 'Fáza pohybu',
     character: 'Postava', male: 'Muž', female: 'Žena',
-    darkMode: 'Tmavý režim', showResults: 'Zobraziť', collapseFilters: 'Zavrieť filtre', collapse: 'Zbaliť menu', expand: 'Rozbaliť menu', language: 'Jazyk', open: 'Otvoriť'
+    darkMode: 'Tmavý režim', loading3d: 'Načítavam 3D', favorites: 'Obľúbené', addFav: 'Do obľúbených', inFav: 'V obľúbených', removeFav: 'Odstrániť z obľúbených', favEmptyTitle: 'Zatiaľ nemáš obľúbené', favEmptyHint: 'Ťukni na srdiečko pri cviku a uložíš si ho sem.', share: 'Zdieľať', linkCopied: 'Odkaz skopírovaný', prevEx: 'Predchádzajúci', nextEx: 'Ďalší', exNav: 'Ďalšie cviky', keysHint: 'medzerník — pauza', showResults: 'Zobraziť', collapseFilters: 'Zavrieť filtre', collapse: 'Zbaliť menu', expand: 'Rozbaliť menu', language: 'Jazyk', open: 'Otvoriť'
   },
   muscles: {
     chest: 'Prsné svaly', shoulders: 'Deltové svaly', biceps: 'Biceps', triceps: 'Triceps', forearms: 'Predlaktia',
