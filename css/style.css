@@ -341,6 +341,9 @@ ul.grid { list-style: none; margin: 0; padding: 0; }
   #scrub { order: -1; flex-basis: 100%; }
   .glow-btn span { display: none; } .glow-btn { padding: 0 11px; }
   .speed { margin-left: auto; }
+  .stage .hint { display: none; }                          /* подсказку «тяни» на телефоне не показываем — меньше всего поверх модели */
+  .stage-top { right: 16px; }
+  .stage { height: clamp(380px, 72svh, 640px); }
 }
 .stage.flat { display: grid; place-items: center; padding: 28px; height: auto; min-height: 380px; }
 .stage.flat .inner { display: grid; gap: 14px; justify-items: center; width: 100%; }

@@ -445,6 +445,20 @@
     }
   });
 
+  /* камера: на телефоне чуть дальше, чтобы кнопки поверх 3D не закрывали модель */
+  const phoneMQ = matchMedia('(max-width: 640px)');
+  const CAM_PHONE = 1.55;
+  const camOrbit = md => {
+    if (!phoneMQ.matches) return md.orbit;
+    const p = md.orbit.trim().split(/\s+/); p[2] = (parseFloat(p[2]) * (md.phone || CAM_PHONE)).toFixed(2) + 'm'; return p.join(' ');
+  };
+  const camMax = md => phoneMQ.matches ? (Math.max(parseFloat(md.max), parseFloat(camOrbit(md).split(/\s+/)[2]) + 1)).toFixed(1) + 'm' : md.max;
+  phoneMQ.addEventListener && phoneMQ.addEventListener('change', () => {
+    const mv = document.getElementById('mv'), ex = byId[decodeURIComponent(location.hash.slice(1))];
+    if (!mv || !ex || !ex.model) return;
+    mv.maxCameraOrbit = `auto 88deg ${camMax(ex.model)}`; mv.cameraOrbit = camOrbit(ex.model);
+  });
+
   /* ---------- страница упражнения ---------- */
   function renderDetail(ex) {
     const t = T(), x = exText(ex), en = D.LANG.en.ex[ex.id];
@@ -453,7 +467,7 @@
     const stage = md ? `<div class="stage">
         <model-viewer id="mv" src="${MODELS[S.who]}" animation-name="${md.variants[0].anim}" autoplay camera-controls
           environment-image="neutral" exposure="1.05" shadow-intensity="1.1" shadow-softness="0.9" field-of-view="28deg"
-          camera-target="${md.target}" camera-orbit="${md.orbit}" min-camera-orbit="auto 20deg 1.5m" max-camera-orbit="auto 88deg ${md.max}"
+          camera-target="${md.target}" camera-orbit="${camOrbit(md)}" min-camera-orbit="auto 20deg 1.5m" max-camera-orbit="auto 88deg ${camMax(md)}"
           interaction-prompt="none" touch-action="pan-y" alt="${esc(x.name)}"></model-viewer>
         <span class="hint" aria-hidden="true">${esc(t.drag)}</span>
         <div class="stage-top">

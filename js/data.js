@@ -5,7 +5,8 @@
    muscles.primary / secondary — ключи мышц (см. MUSCLE_KEYS)
    reps     — строка с числами; repsType: 'perSide' (на каждую сторону), 'sec' (секунды), 'min' (минуты), 'max' (до отказа)
    rest     — отдых в секундах: число или [от, до]; null — без отдыха
-   model    — только если есть анимация в models/exercises.glb */
+   model    — только если есть анимация в models/exercises.glb;
+              phone — во сколько раз отодвинуть камеру на телефоне (по умолчанию 1.55) */
 
 window.EXERFLY = { LANG: {} };
 
@@ -17,7 +18,7 @@ EXERFLY.EXERCISES = [
   /* ---------- ноги и ягодицы ---------- */
   { id: 'squat', group: 'legs', level: 1, equipment: ['bodyweight'], sets: '3', reps: '15–20', rest: 60,
     muscles: { primary: ['quads', 'glutes'], secondary: ['hamstrings', 'lower_back', 'abs'] },
-    model: { target: '0m 0.8m 0m', orbit: '35deg 78deg 4.2m', max: '6m', variants: [{ anim: 'squat', label: 'classic' }, { anim: 'squat_arms_forward', label: 'armsForward' }] } },
+    model: { phone: 1.75, target: '0m 0.8m 0m', orbit: '35deg 78deg 4.2m', max: '6m', variants: [{ anim: 'squat', label: 'classic' }, { anim: 'squat_arms_forward', label: 'armsForward' }] } },
   { id: 'back-squat', group: 'legs', level: 2, equipment: ['barbell', 'rack'], sets: '4', reps: '6–10', rest: [120, 180],
     muscles: { primary: ['quads', 'glutes'], secondary: ['hamstrings', 'lower_back', 'abs', 'calves'] },
     model: { target: '0m 0.95m 0m', orbit: '18deg 82deg 4.6m', max: '8m', variants: [{ anim: 'back_squat', label: 'classic' }] } },
@@ -98,19 +99,19 @@ EXERFLY.EXERCISES = [
 
   { id: 'dumbbell-curl', group: 'arms', level: 1, equipment: ['dumbbells'], sets: '3', reps: '10–12', repsType: 'perSide', rest: 60,
     muscles: { primary: ['biceps'], secondary: ['forearms'] },
-    model: { target: '0m 1m 0m', orbit: '30deg 82deg 3.8m', max: '7m', variants: [{ anim: 'dumbbell_curl', label: 'classic' }] } },
+    model: { phone: 1.75, target: '0m 1m 0m', orbit: '30deg 82deg 3.8m', max: '7m', variants: [{ anim: 'dumbbell_curl', label: 'classic' }] } },
 
   /* ---------- пресс и кор ---------- */
   { id: 'plank', group: 'core', level: 1, equipment: ['bodyweight'], sets: '3', reps: '30–60', repsType: 'sec', rest: 45,
     muscles: { primary: ['abs'], secondary: ['obliques', 'shoulders', 'glutes'] },
-    model: { target: '0m 0.35m 0m', orbit: '75deg 75deg 3.8m', max: '7m', variants: [{ anim: 'plank', label: 'classic' }] } },
+    model: { phone: 1.95, target: '0m 0.35m 0m', orbit: '75deg 75deg 3.8m', max: '7m', variants: [{ anim: 'plank', label: 'classic' }] } },
   { id: 'crunch', group: 'core', level: 1, equipment: ['bodyweight'], sets: '3', reps: '15–20', rest: 45,
     muscles: { primary: ['abs'], secondary: ['obliques'] } },
   { id: 'hanging-leg-raise', group: 'core', level: 3, equipment: ['bar'], sets: '3', reps: '8–12', rest: 90,
     muscles: { primary: ['abs'], secondary: ['obliques', 'forearms'] } },
   { id: 'bicycle-crunch', group: 'core', level: 1, equipment: ['bodyweight'], sets: '3', reps: '15–20', repsType: 'perSide', rest: 45,
     muscles: { primary: ['abs', 'obliques'], secondary: [] },
-    model: { target: '0m 0.3m 0m', orbit: '65deg 70deg 3.6m', max: '7m', variants: [{ anim: 'bicycle_crunch', label: 'classic' }] } },
+    model: { phone: 1.95, target: '0m 0.3m 0m', orbit: '65deg 70deg 3.6m', max: '7m', variants: [{ anim: 'bicycle_crunch', label: 'classic' }] } },
 
   /* ---------- всё тело ---------- */
   { id: 'clean-and-jerk', group: 'fullbody', level: 3, equipment: ['barbell'], sets: '5', reps: '1–3', rest: [120, 180],
