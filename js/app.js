@@ -468,11 +468,12 @@
   /* камера: на телефоне чуть дальше, чтобы кнопки поверх 3D не закрывали модель */
   const phoneMQ = matchMedia('(max-width: 640px)');
   const CAM_PHONE = 1.55;
+  const CAM_DESK = 1.25;                            // и на компьютере чуть дальше: плеер и кнопки не должны закрывать модель
+  const camFactor = md => phoneMQ.matches ? (md.phone || CAM_PHONE) : (md.desk || CAM_DESK);
   const camOrbit = md => {
-    if (!phoneMQ.matches) return md.orbit;
-    const p = md.orbit.trim().split(/\s+/); p[2] = (parseFloat(p[2]) * (md.phone || CAM_PHONE)).toFixed(2) + 'm'; return p.join(' ');
+    const p = md.orbit.trim().split(/\s+/); p[2] = (parseFloat(p[2]) * camFactor(md)).toFixed(2) + 'm'; return p.join(' ');
   };
-  const camMax = md => phoneMQ.matches ? (Math.max(parseFloat(md.max), parseFloat(camOrbit(md).split(/\s+/)[2]) + 1)).toFixed(1) + 'm' : md.max;
+  const camMax = md => (Math.max(parseFloat(md.max), parseFloat(camOrbit(md).split(/\s+/)[2]) + 1)).toFixed(1) + 'm';
   phoneMQ.addEventListener && phoneMQ.addEventListener('change', () => {
     const mv = document.getElementById('mv'), ex = byId[decodeURIComponent(location.hash.slice(1))];
     if (!mv || !ex || !ex.model) return;
@@ -502,24 +503,14 @@
     fb.addEventListener('click', () => { toggleFav(ex.id); fb.outerHTML = favBtn(ex, 'fav-big'); setupFavBig(); });
     function setupFavBig() { const b = app.querySelector('.fav-big'); b.focus({ preventScroll: true }); b.addEventListener('click', () => { toggleFav(ex.id); b.outerHTML = favBtn(ex, 'fav-big'); setupFavBig(); }); }
     // поделиться: системное меню на телефоне, иначе — копирование ссылки
-    document.getElementById('share').addEventListener('click', async () => {
+    const shareBtn = document.getElementById('share');   // кнопка временно убрана
+    if (shareBtn) shareBtn.addEventListener('click', async () => {
       const url = location.href, data = { title: x.name + ' · Exerfly', text: x.short, url };
       if (navigator.share && matchMedia('(pointer: coarse)').matches) { try { await navigator.share(data); } catch (e) { /* закрыли меню */ } return; }
       try { await navigator.clipboard.writeText(url); }
       catch (e) { const ta = document.createElement('textarea'); ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e2) {} ta.remove(); }
       toast(t.linkCopied);
     });
-    // свайп влево/вправо — соседние упражнения (кроме 3D-окна, где свайп поворачивает модель)
-    const nb = neighbours(ex); if (!nb) return;
-    const art = app.querySelector('article'); let sx = 0, sy = 0, st = 0, ok = false;
-    art.addEventListener('touchstart', e => {
-      const tt = e.touches[0]; ok = e.touches.length === 1 && !e.target.closest('.stage, .tabs, input, .chips');
-      sx = tt.clientX; sy = tt.clientY; st = Date.now();
-    }, { passive: true });
-    art.addEventListener('touchend', e => {
-      if (!ok) return; const tt = e.changedTouches[0], dx = tt.clientX - sx, dy = tt.clientY - sy;
-      if (Math.abs(dx) > 80 && Math.abs(dy) < 50 && Date.now() - st < 700) location.hash = (dx < 0 ? nb.next : nb.prev).id;
-    }, { passive: true });
   }
 
   /* клавиши на странице упражнения: пробел — пауза, ← → — перемотка */
@@ -588,7 +579,6 @@
         ${S.lang !== 'en' && en ? `<p class="sub" lang="en">${esc(en.name)}</p>` : ''}
         <p class="lead">${esc(x.short)}</p>
         <div class="ex-actions">${favBtn(ex, 'fav-big')}
-          <button type="button" class="share-btn" id="share"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg><span>${esc(t.share)}</span></button>
         </div>
       </header>
       ${stage}
@@ -643,6 +633,14 @@
       pp.setAttribute('aria-label', paused ? t.play : t.pause); pp.title = (paused ? t.play : t.pause) + ' (Space)';
     };
     pp.addEventListener('click', () => { if (mv.paused) mv.play(); else mv.pause(); setPaused(mv.paused); });
+    // клик/тап по 3D-окну — пауза/продолжить; перетаскивание по-прежнему поворачивает модель
+    let down = null;
+    mv.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+    mv.addEventListener('pointerup', e => {
+      if (!down) return; const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y), dt = performance.now() - down.t; down = null;
+      if (moved < 6 && dt < 350) pp.click();
+    });
+    mv.addEventListener('pointercancel', () => { down = null; });
     scrub.addEventListener('input', () => {
       dragging = true; mv.pause(); setPaused(true);
       mv.currentTime = +scrub.value * (mv.duration || 0);

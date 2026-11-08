@@ -71,7 +71,7 @@ EXERFLY.EXERCISES = [
     model: { target: '0m 0.6m 0.3m', orbit: '50deg 68deg 6.2m', max: '9m', variants: [{ anim: 'bench_press', label: 'classic' }] } },
   { id: 'incline-dumbbell-press', group: 'chest', level: 2, equipment: ['dumbbells', 'bench'], sets: '3–4', reps: '8–12', rest: 90,
     muscles: { primary: ['chest', 'shoulders'], secondary: ['triceps'] },
-    model: { target: '0m 0.75m -0.1m', orbit: '40deg 72deg 4.2m', max: '7m', variants: [{ anim: 'incline_dumbbell_press', label: 'classic' }] } },
+    model: { target: '0m 0.64m -0.1m', orbit: '40deg 72deg 4.2m', max: '7m', variants: [{ anim: 'incline_dumbbell_press', label: 'classic' }] } },
   { id: 'dumbbell-fly', group: 'chest', level: 1, equipment: ['dumbbells', 'bench'], sets: '3', reps: '12–15', rest: 60,
     muscles: { primary: ['chest'], secondary: ['shoulders'] } },
   { id: 'dips', group: 'chest', level: 2, equipment: ['dips'], sets: '3', reps: '8–12', rest: 90,
@@ -99,7 +99,7 @@ EXERFLY.EXERCISES = [
 
   { id: 'dumbbell-curl', group: 'arms', level: 1, equipment: ['dumbbells'], sets: '3', reps: '10–12', repsType: 'perSide', rest: 60,
     muscles: { primary: ['biceps'], secondary: ['forearms'] },
-    model: { phone: 1.75, target: '0m 1m 0m', orbit: '30deg 82deg 3.8m', max: '7m', variants: [{ anim: 'dumbbell_curl', label: 'classic' }] } },
+    model: { phone: 1.75, target: '0m 0.88m 0m', orbit: '30deg 82deg 3.8m', max: '7m', variants: [{ anim: 'dumbbell_curl', label: 'classic' }] } },
 
   /* ---------- пресс и кор ---------- */
   { id: 'plank', group: 'core', level: 1, equipment: ['bodyweight'], sets: '3', reps: '30–60', repsType: 'sec', rest: 45,
