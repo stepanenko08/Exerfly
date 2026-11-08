@@ -161,6 +161,18 @@ main:focus { outline: none; }
 .mapcard-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .mapcard-head .eyebrow, .mapcard-head .hint { margin: 0; }
 .mapcard-head .hint { font-size: 13px; color: var(--muted); }
+.mapcard-head { position: relative; }
+/* название мышцы при наведении — по центру шапки */
+.map-hover {
+  position: absolute; left: 50%; top: 50%; translate: -50% calc(-50% + 4px); opacity: 0; pointer-events: none; white-space: nowrap;
+  padding: 6px 12px; border-radius: 999px; background: var(--heat); color: #fff; font: 700 13px/1 var(--f-body);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--heat) 35%, transparent); transition: opacity .15s, translate .15s;
+}
+.map-hover.on { opacity: 1; translate: -50% -50%; }
+.mapcard-head .hint { transition: opacity .15s; }
+.mapcard-head:has(.map-hover.on) .hint { opacity: 0; }   /* длинные названия не наезжают на подсказку */
+.bm.interactive .m.hov:not(.pri) { fill: color-mix(in srgb, var(--heat) 45%, var(--bm-idle)); }
+@media (prefers-reduced-motion: reduce) { .map-hover { transition: none; } }
 .mapcard svg { width: 100%; height: auto; max-height: 360px; }
 @media (max-width: 900px) { .mapcard svg { max-height: 260px; } }
 

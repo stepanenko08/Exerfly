@@ -77,7 +77,7 @@
     let s = '';
     for (const v of BM_VIEWS) for (const [k, d] of Object.entries(BODY[v])) {
       if (k === '_body') { s += `<path class="bm-body" d="${d}"/>`; continue; }
-      s += `<path class="m ${pri.has(k) ? 'pri' : sec.has(k) ? 'sec' : ''}" data-m="${k}" role="button" tabindex="0" aria-pressed="${pri.has(k)}" aria-label="${esc(mName(k))}" d="${d}"><title>${esc(mName(k))}</title></path>`;
+      s += `<path class="m ${pri.has(k) ? 'pri' : sec.has(k) ? 'sec' : ''}" data-m="${k}" role="button" tabindex="0" aria-pressed="${pri.has(k)}" aria-label="${esc(mName(k))}" d="${d}"></path>`;
     }
     return `<svg class="bm interactive" viewBox="${vb}" aria-label="${esc(T().fMusclesHint)}">${s}${labels}</svg>`;
   }
@@ -209,7 +209,7 @@
           </ul>
         </div>
         <section class="mapcard" aria-labelledby="map-title">
-          <div class="mapcard-head"><h2 class="eyebrow" id="map-title">${esc(t.fMuscles)}</h2><p class="hint">${esc(t.fMusclesHint)}</p></div>
+          <div class="mapcard-head"><h2 class="eyebrow" id="map-title">${esc(t.fMuscles)}</h2><span class="map-hover" id="map-hover" aria-hidden="true"></span><p class="hint">${esc(t.fMusclesHint)}</p></div>
           <div id="heromap"></div>
         </section>
       </section>
@@ -443,6 +443,18 @@
     if (el && el.dataset.act !== 'only3d') onCatalogAction(el);
   });
   app.addEventListener('change', e => { if (e.target.dataset.act === 'only3d') onCatalogAction(e.target); });
+  // подпись группы мышц над схемой при наведении (и при фокусе с клавиатуры)
+  function mapHover(k) {
+    const el = document.getElementById('map-hover'); if (!el) return;
+    if (k) el.textContent = mName(k);
+    el.classList.toggle('on', !!k);
+    app.querySelectorAll('.bm.interactive .m.hov').forEach(x => x.classList.remove('hov'));
+    if (k) app.querySelectorAll(`.bm.interactive [data-m="${k}"]`).forEach(x => x.classList.add('hov'));
+  }
+  app.addEventListener('pointerover', e => { const m = e.target.closest && e.target.closest('.bm.interactive [data-m]'); if (m && e.pointerType !== 'touch') mapHover(m.dataset.m); });
+  app.addEventListener('pointerout', e => { const m = e.target.closest && e.target.closest('.bm.interactive [data-m]'); if (m && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest(`[data-m="${m.dataset.m}"]`))) mapHover(null); });
+  app.addEventListener('focusin', e => { const m = e.target.closest && e.target.closest('.bm.interactive [data-m]'); if (m) mapHover(m.dataset.m); });
+  app.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('.bm.interactive [data-m]')) mapHover(null); });
   // мышью/пальцем мышца не получает фокус — иначе браузер на миг рисует рамку фокуса (клавиатурой фокус остаётся)
   app.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('.bm.interactive [data-m]')) e.preventDefault(); });
   app.addEventListener('keydown', e => {
