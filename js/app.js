@@ -16,7 +16,7 @@
   };
   const S = {
     lang: LANGS.includes(store.get('exerfly-lang')) ? store.get('exerfly-lang') : DEFAULT_LANG,
-    q: '', group: null, speed: 1, who: store.get('exerfly-character') === 'f' ? 'f' : 'm', glow: false, /* подсветка мышц временно выключена */ muscles: new Set(), equipment: new Set(), levels: new Set(), only3d: false, panel: false
+    q: '', group: null, speed: 1, who: store.get('exerfly-character') === 'f' ? 'f' : 'm', glow: false, /* подсветка мышц временно выключена */ muscles: new Set(), equipment: new Set(), levels: new Set(), only3d: false, panel: false, tbCollapsed: null
   };
   const L = () => D.LANG[S.lang];
   const T = () => L().ui;
@@ -91,7 +91,6 @@
 
   /* ---------- тема ---------- */
   const themeBtn = document.getElementById('theme');
-  const darkMQ = matchMedia('(prefers-color-scheme: dark)');
   const currentTheme = () => document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   function applyTheme(theme, save) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -102,7 +101,6 @@
   }
   themeBtn.addEventListener('click', () => applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true));
   // пока пользователь сам не выбрал тему, следуем за системой
-  darkMQ.addEventListener && darkMQ.addEventListener('change', e => { if (!store.get('exerfly-theme')) applyTheme(e.matches ? 'dark' : 'light', false); });
   applyTheme(currentTheme(), false);
 
   /* ---------- шапка и выбор языка ---------- */
@@ -218,39 +216,119 @@
           <div id="heromap"></div>
         </section>
       </section>
-      <section class="toolbar" aria-label="${esc(t.filters)}"><div class="wrap" id="toolbar"></div></section>
+      <section class="toolbar" id="tbar" aria-label="${esc(t.filters)}"><div class="wrap">
+        <div class="tb-row">
+          <div class="mini-search" role="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="q2" type="search" autocomplete="off" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}" value="${esc(S.q)}">
+            <button type="button" class="clear" data-act="clear-q" aria-label="${esc(t.clearSearch)}" ${S.q ? '' : 'hidden'}>×</button>
+          </div>
+          <div class="tb-filter" id="tb-filter"></div>
+          <div class="tb-scroll" id="tb-scroll">
+            <button type="button" class="tb-arrow prev" data-dir="-1" tabindex="-1" aria-hidden="true" hidden><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+            <div class="tabs" id="tb-tabs" role="group" aria-label="${esc(t.fGroup)}"></div>
+            <button type="button" class="tb-arrow next" data-dir="1" tabindex="-1" aria-hidden="true" hidden><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+          </div>
+        </div>
+        <div id="toolbar" class="tb-extra"></div>
+        <button type="button" class="tb-toggle" id="tb-toggle" aria-controls="tb-filter tb-scroll toolbar" aria-expanded="true" aria-label="${esc(t.collapse)}" title="${esc(t.collapse)}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
+        </button>
+      </div></section>
       <section class="wrap results" id="results"></section>`;
     document.getElementById('search-form').addEventListener('submit', e => e.preventDefault());
     const q = document.getElementById('q');
-    q.addEventListener('input', () => { S.q = q.value; app.querySelector('[data-act="clear-q"]').hidden = !S.q; refresh(); });
+    const q2 = document.getElementById('q2');
+    const onType = src => { S.q = src.value; (src === q ? q2 : q).value = S.q; app.querySelectorAll('[data-act="clear-q"]').forEach(b => { b.hidden = !S.q; }); refresh(); };
+    q.addEventListener('input', () => onType(q));
+    q2.addEventListener('input', () => onType(q2));
+    document.getElementById('tb-toggle').addEventListener('click', () => { S.tbCollapsed = !tbCollapsed(); syncStuck(); });
+    // стрелки прокрутки групп мышц
+    const tabs = document.getElementById('tb-tabs');
+    document.querySelectorAll('.tb-arrow').forEach(btn => btn.addEventListener('click', () => {
+      tabs.scrollBy({ left: +btn.dataset.dir * tabs.clientWidth * 0.7, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    }));
+    tabs.addEventListener('scroll', syncArrows, { passive: true });
+    if (window.ResizeObserver) new ResizeObserver(syncArrows).observe(tabs);
     refresh();
+    syncStuck();
   }
+
+  /* панель фильтров «прилипла» к шапке → показываем мини-поиск и стрелку сворачивания.
+     S.tbCollapsed: null — авто (на телефоне свёрнута, на компьютере раскрыта), иначе выбор пользователя */
+  const narrowMQ = matchMedia('(max-width: 767px)');
+  const tbCollapsed = () => S.tbCollapsed === null ? narrowMQ.matches : S.tbCollapsed;
+  function syncStuck() {
+    const bar = document.getElementById('tbar');
+    if (!bar) return;
+    const top = parseFloat(getComputedStyle(bar).top) || 0;
+    const stuck = getComputedStyle(bar).position === 'sticky' && bar.getBoundingClientRect().top <= top + 0.5 && window.scrollY > 0;
+    const collapsed = stuck && tbCollapsed();
+    bar.classList.toggle('stuck', stuck);
+    bar.classList.toggle('collapsed', collapsed);
+    const btn = document.getElementById('tb-toggle'), t = T();
+    if (btn) {
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      btn.setAttribute('aria-label', collapsed ? t.expand : t.collapse);
+      btn.title = collapsed ? t.expand : t.collapse;
+    }
+    // если фокус был в мини-поиске, а панель отлипла — переносим его в большой поиск
+    if (!stuck && document.activeElement && document.activeElement.id === 'q2') document.getElementById('q').focus({ preventScroll: true });
+  }
+  function syncArrows() {
+    const tabs = document.getElementById('tb-tabs'), box = document.getElementById('tb-scroll');
+    if (!tabs || !box) return;
+    const max = tabs.scrollWidth - tabs.clientWidth;
+    const canPrev = tabs.scrollLeft > 2, canNext = tabs.scrollLeft < max - 2;
+    box.querySelector('.prev').hidden = !canPrev;
+    box.querySelector('.next').hidden = !canNext;
+    tabs.style.setProperty('--fl', canPrev ? '56px' : '0px');
+    tabs.style.setProperty('--fr', canNext ? '56px' : '0px');
+  }
+  // показать выбранную/сфокусированную группу целиком, если она за краем
+  function revealTab(el) {
+    const tabs = document.getElementById('tb-tabs');
+    if (!tabs || !el || !tabs.contains(el)) return;
+    const pad = 48, l = el.offsetLeft - tabs.offsetLeft, r = l + el.offsetWidth;
+    if (l < tabs.scrollLeft + pad) tabs.scrollLeft = Math.max(0, l - pad);
+    else if (r > tabs.scrollLeft + tabs.clientWidth - pad) tabs.scrollLeft = r - tabs.clientWidth + pad;
+  }
+  document.addEventListener('focusin', e => { if (e.target.closest && e.target.closest('#tb-tabs')) revealTab(e.target); });
+
+  let stuckRAF = 0;
+  addEventListener('scroll', () => { if (!stuckRAF) stuckRAF = requestAnimationFrame(() => { stuckRAF = 0; syncStuck(); }); }, { passive: true });
+  addEventListener('resize', syncStuck);
 
   function refresh() {
     const t = T(), list = filtered(), n = activeCount() + (S.q.trim() ? 1 : 0);
     document.getElementById('heromap').innerHTML = bodyMap([...S.muscles], [], { interactive: true });
 
-    const groupTabs = `<div class="tabs" role="group" aria-label="${esc(t.fGroup)}">
-        <button type="button" class="pill" data-act="group" data-v="" aria-pressed="${!S.group}">${esc(t.all)} <span class="n">${D.EXERCISES.length}</span></button>
-        ${D.GROUP_KEYS.map(g => `<button type="button" class="pill" data-act="group" data-v="${g}" aria-pressed="${S.group === g}">${esc(L().groups[g])} <span class="n">${D.EXERCISES.filter(e => e.group === g).length}</span></button>`).join('')}
-      </div>`;
+    const groupTabs = `<button type="button" class="pill" data-act="group" data-v="" aria-pressed="${!S.group}">${esc(t.all)} <span class="n">${D.EXERCISES.length}</span></button>
+        ${D.GROUP_KEYS.map(g => `<button type="button" class="pill" data-act="group" data-v="${g}" aria-pressed="${S.group === g}">${esc(L().groups[g])} <span class="n">${D.EXERCISES.filter(e => e.group === g).length}</span></button>`).join('')}`;
     const pc = panelCount();
-    const row = `<div class="toolrow">
-        <button type="button" class="pill filter-btn" data-act="panel" aria-expanded="${S.panel}" aria-controls="panel">
+    const filterBtn = `<button type="button" class="pill filter-btn" data-act="panel" aria-expanded="${S.panel}" aria-controls="panel">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
           ${esc(t.filters)}${pc ? ` <span class="dotn">${pc}</span>` : ''}
-        </button>
+        </button>`;
+    const count = `<span class="count" role="status">${esc(t.found)}: ${list.length}</span>`;
+    // строка с выбранными мышцами и сбросом — только когда что-то выбрано; иначе счётчик только для скринридера
+    const row = n ? `<div class="toolrow">
         ${[...S.muscles].map(k => `<button type="button" class="pill muscle" data-act="muscle" data-v="${k}" aria-pressed="true">${esc(mName(k))} <span class="x" aria-hidden="true">×</span></button>`).join('')}
-        ${n ? `<button type="button" class="linkbtn" data-act="reset">${esc(t.reset)}</button>` : ''}
-        <span class="count" role="status">${esc(t.found)}: ${list.length}</span>
-      </div>`;
+        <button type="button" class="linkbtn" data-act="reset">${esc(t.reset)}</button>
+        ${count}
+      </div>` : `<div class="sr-only">${count}</div>`;
     const panel = !S.panel ? '' : `<div class="panel" id="panel">
         <fieldset><legend>${esc(t.fEquipment)}</legend><div class="opts">${D.EQUIPMENT_KEYS.map(k => `<button type="button" class="pill" data-act="equip" data-v="${k}" aria-pressed="${S.equipment.has(k)}">${esc(L().equipment[k])}</button>`).join('')}</div></fieldset>
         <fieldset><legend>${esc(t.fLevel)}</legend><div class="opts">${[1, 2, 3].map(k => `<button type="button" class="pill" data-act="level" data-v="${k}" aria-pressed="${S.levels.has(k)}">${levelHTML(k)}</button>`).join('')}</div>
           <label class="switch"><input type="checkbox" id="only3d" data-act="only3d" ${S.only3d ? 'checked' : ''}>${esc(t.only3d)}</label></fieldset>
         <fieldset><legend>${esc(t.fMuscles)}</legend><div class="opts">${D.MUSCLE_KEYS.map(k => `<button type="button" class="pill muscle" data-act="muscle" data-v="${k}" aria-pressed="${S.muscles.has(k)}">${esc(mName(k))}</button>`).join('')}</div></fieldset>
       </div>`;
-    document.getElementById('toolbar').innerHTML = groupTabs + row + panel;
+    document.getElementById('tb-filter').innerHTML = filterBtn;
+    const tabsEl = document.getElementById('tb-tabs'), keep = tabsEl.scrollLeft;
+    tabsEl.innerHTML = groupTabs;
+    tabsEl.scrollLeft = keep;
+    document.getElementById('toolbar').innerHTML = row + panel;
+    syncArrows();
 
     const res = document.getElementById('results');
     if (!list.length) {
@@ -287,7 +365,12 @@
     else if (act === 'level') toggle(S.levels, +v);
     else if (act === 'only3d') S.only3d = el.checked;
     else if (act === 'panel') S.panel = !S.panel;
-    else if (act === 'clear-q') { S.q = ''; const q = document.getElementById('q'); q.value = ''; el.hidden = true; q.focus(); }
+    else if (act === 'clear-q') {
+      S.q = ''; const inMini = !!el.closest('.mini-search');
+      ['q', 'q2'].forEach(id => { const i = document.getElementById(id); if (i) i.value = ''; });
+      app.querySelectorAll('[data-act="clear-q"]').forEach(b => { b.hidden = true; });
+      document.getElementById(inMini ? 'q2' : 'q').focus({ preventScroll: inMini });
+    }
     else if (act === 'reset') { S.q = ''; S.group = null; S.muscles.clear(); S.equipment.clear(); S.levels.clear(); S.only3d = false; renderCatalog(); return; }
     else return;
     refresh();

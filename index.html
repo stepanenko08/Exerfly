@@ -16,7 +16,7 @@
   /* тема до отрисовки страницы, чтобы не было вспышки */
   (function () {
     var t; try { t = localStorage.getItem('exerfly-theme'); } catch (e) {}
-    if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (t !== 'light' && t !== 'dark') t = 'dark'; /* по умолчанию — тёмная */
     document.documentElement.setAttribute('data-theme', t);
   })();
 </script>
@@ -44,10 +44,10 @@
     </a>
     <nav class="nav" id="nav"></nav>
     <div class="tools">
-      <button type="button" class="theme-toggle" id="theme" role="switch" aria-checked="false">
+      <button type="button" class="theme-toggle" id="theme" role="switch" aria-checked="true">
         <span class="pill-bg" aria-hidden="true"></span>
-        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.6"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
         <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.5 14.6A7.8 7.8 0 0 1 9.4 4.5a7.8 7.8 0 1 0 10.1 10.1Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3.6"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
       </button>
       <div class="lang-dd" id="lang"></div>
     </div>
