@@ -17,6 +17,7 @@ EXERFLY.LANG.en = {
     perSide: 'per side', max: 'to failure', sec: 's', min: 'min',
     variants: { classic: 'Classic', armsForward: 'Arms forward', overhand: 'Overhand grip' },
     footer: 'Recommendations are approximate, pick a weight that suits you.', skip: 'Skip to content', mainNav: 'Main menu', homeLabel: 'Exerfly – home', metaDesc: 'Exerfly — an exercise library with 3D animations, technique and a map of the muscles worked.', clearSearch: 'Clear search', variant: 'Exercise variant', breadcrumbs: 'Breadcrumbs',
+    play: 'Play', pause: 'Pause', speed: 'Speed', glow: 'Highlight muscles', phase: 'Movement phase',
     darkMode: 'Dark mode', language: 'Language', open: 'Open'
   },
   muscles: {

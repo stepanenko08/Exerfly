@@ -20,7 +20,7 @@ EXERFLY.EXERCISES = [
     model: { target: '0m 0.8m 0m', orbit: '35deg 78deg 4.2m', max: '6m', variants: [{ anim: 'squat', label: 'classic' }, { anim: 'squat_arms_forward', label: 'armsForward' }] } },
   { id: 'back-squat', group: 'legs', level: 2, equipment: ['barbell', 'rack'], sets: '4', reps: '6–10', rest: [120, 180],
     muscles: { primary: ['quads', 'glutes'], secondary: ['hamstrings', 'lower_back', 'abs', 'calves'] },
-    model: { target: '0m 0.95m 0m', orbit: '35deg 80deg 4.6m', max: '8m', variants: [{ anim: 'back_squat', label: 'classic' }] } },
+    model: { target: '0m 0.95m 0m', orbit: '18deg 82deg 4.6m', max: '8m', variants: [{ anim: 'back_squat', label: 'classic' }] } },
   { id: 'deadlift', group: 'legs', level: 3, equipment: ['barbell'], sets: '3–4', reps: '4–6', rest: 180,
     muscles: { primary: ['glutes', 'hamstrings', 'lower_back'], secondary: ['quads', 'traps', 'lats', 'forearms'] } },
   { id: 'romanian-deadlift', group: 'legs', level: 2, equipment: ['barbell', 'dumbbells'], sets: '3', reps: '8–12', rest: 90,

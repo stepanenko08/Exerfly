@@ -17,6 +17,7 @@ EXERFLY.LANG.ru = {
     perSide: 'на сторону', max: 'до отказа', sec: 'с', min: 'мин',
     variants: { classic: 'Классика', armsForward: 'Руки вперёд', overhand: 'Прямой хват' },
     footer: 'Рекомендации ориентировочные, подбирай вес под себя.', skip: 'Перейти к содержимому', mainNav: 'Главное меню', homeLabel: 'Exerfly – главная', metaDesc: 'Exerfly — каталог упражнений с 3D-анимациями, техникой и картой задействованных мышц.', clearSearch: 'Очистить поиск', variant: 'Вариант упражнения', breadcrumbs: 'Навигация',
+    play: 'Воспроизвести', pause: 'Пауза', speed: 'Скорость', glow: 'Подсветить мышцы', phase: 'Фаза движения',
     darkMode: 'Тёмная тема', language: 'Язык', open: 'Открыть'
   },
   muscles: {

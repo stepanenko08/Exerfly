@@ -229,10 +229,32 @@ def fit(clip):
     """Клип в пространстве Mixamo (Y вверх, метры, риг Ch28) → новый персонаж."""
     clip['Hips']['translation'] = clip['Hips']['translation']/S_ROOT
     for k in list(clip):
-        if 'Index' in k and k in NEWR and k in OLDR:   # палец: переносим только сгиб относительно покоя
-            q = clip[k]['rotation']; d = qmul(np.broadcast_to(qinv(OLDR[k]), q.shape), q)
-            clip[k] = {'rotation': qmul(np.broadcast_to(NEWR[k], d.shape), d)}
-        elif k != 'Hips' and k in clip: clip[k] = {'rotation': clip[k]['rotation']} if 'rotation' in clip[k] else {}
+        if 'Index' in k or 'Thumb' in k or 'Middle' in k or 'Ring' in k or 'Pinky' in k: del clip[k]
+        elif k != 'Hips': clip[k] = {'rotation': clip[k]['rotation']} if 'rotation' in clip[k] else {}
+    return clip
+
+# палец-«варежка»: сгибаем вокруг оси ладони на заданный угол (кулак для снарядов, лёгкий сгиб без них)
+def axis_angle(a, deg):
+    a = a/np.linalg.norm(a); h = np.radians(deg)/2; return np.r_[a*np.sin(h), np.cos(h)]
+REST = rig.world({}, 0)
+PALM = {}
+for side in ('Left', 'Right'):
+    hand = REST(side+'Hand')[:3, 3]; tip = REST(side+'HandIndex3')[:3, 3]; d = (tip-hand)/np.linalg.norm(tip-hand)
+    n = np.array([0, -1.0, 0]); n = n-np.dot(n, d)*d; PALM[side] = n/np.linalg.norm(n)
+def curl(clip, N, angles):
+    for side in ('Left', 'Right'):
+        Rh = REST(side+'Hand')[:3, :3]
+        palm = -Rh[:, 2] if False else None
+        for i, ang in zip((1, 2, 3), angles):
+            b = f'{side}HandIndex{i}'
+            if b not in JOINTS: continue
+            Rb = REST(b)[:3, :3]
+            d = REST(f'{side}HandIndex{i+1}')[:3, 3]-REST(b)[:3, 3] if f'{side}HandIndex{i+1}' in rig.idx else Rb[:, 1]
+            d = d/np.linalg.norm(d)
+            n = PALM[side]                                   # нормаль ладони в мировых координатах (покой)
+            ax_w = np.cross(d, n); ax_b = Rb.T @ ax_w        # ось сгиба в системе кости
+            q = qmul(NEWR[b], axis_angle(ax_b, ang))
+            clip[b] = {'rotation': np.repeat(q[None], N, 0)}
     return clip
 R_FWD = np.array([np.sqrt(.5), 0, 0, np.sqrt(.5)])
 def old_clip(name):
@@ -253,6 +275,35 @@ def old_clip(name):
     t = h['translation']/100; h['translation'] = np.stack([t[:, 0], -t[:, 2], t[:, 1]], 1)
     return fit(clip), N
 
+# выравнивание: убрать боковой наклон головы и перекос плеч, записанные в мокапе
+def rot_between(a, b):
+    a = a/np.linalg.norm(a); b = b/np.linalg.norm(b); v = np.cross(a, b); c = np.dot(a, b)
+    if np.linalg.norm(v) < 1e-9: return np.eye(3)
+    vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    return np.eye(3)+vx+vx@vx*(1/(1+c))
+def wrot(M):
+    R = M[:3, :3]; return R/np.linalg.norm(R, axis=0)
+def set_world_delta(clip, f, bone, Rd, W):
+    """Повернуть кость на мировой поворот Rd (остальное тело ниже по иерархии следует за ней)."""
+    P = wrot(W(short(dst.nodes[rig.parent[rig.idx[bone]]].name)))
+    Rw = wrot(W(bone)); Rl = P.T @ Rd @ Rw
+    clip[bone]['rotation'][f] = mat2q(Rl)
+def level(clip, N, shoulders=True):
+    for bone in ('Spine2', 'Head'):
+        if bone in clip: clip[bone]['rotation'] = np.array(clip[bone]['rotation'], float)
+    for f in range(N):
+        if shoulders:
+            W = rig.world(clip, f); sh = W('LeftArm')[:3, 3]-W('RightArm')[:3, 3]
+            ang = np.arctan2(sh[1], np.hypot(sh[0], sh[2]))
+            fwd = np.cross(sh, [0, 1, 0]); fwd /= np.linalg.norm(fwd)
+            c, s_ = np.cos(-ang), np.sin(-ang); K = np.array([[0, -fwd[2], fwd[1]], [fwd[2], 0, -fwd[0]], [-fwd[1], fwd[0], 0]])
+            set_world_delta(clip, f, 'Spine2', np.eye(3)+s_*K+(1-c)*K@K, W)
+        W = rig.world(clip, f); v = W('HeadTop_End')[:3, 3]-W('Neck')[:3, 3]
+        sh = W('LeftArm')[:3, 3]-W('RightArm')[:3, 3]; side = sh/np.linalg.norm(sh)
+        v2 = v-np.dot(v, side)*side                     # убрать наклон к плечу, кивок вперёд/назад оставить
+        set_world_delta(clip, f, 'Head', rot_between(v, v2), W)
+    return clip
+
 def load(fname, a=0, b=None, pingpong=False):
     clip, N = read_clip('glb/'+fname); fit(clip)
     b = N if b is None else b
@@ -269,11 +320,12 @@ def barbell_props(G, drop=0.0):
     return [(BAR, 'show', None), (BAR, 'translation', t), (BAR, 'rotation', fix_sign(r))]
 
 
-for name in ('pushup', 'squat', 'squat_arms_forward'):
-    clip, N = old_clip(name); write(name, clip, N, [])
-clip, N = old_clip('bench_press'); G = grips(clip, N)
+FIST, RELAX, FLAT = (70, 85, 55), (15, 20, 10), (5, 5, 5)
+for name, hand in (('pushup', FLAT), ('squat', RELAX), ('squat_arms_forward', RELAX)):
+    clip, N = old_clip(name); curl(clip, N, hand); level(clip, N); write(name, clip, N, [])
+clip, N = old_clip('bench_press'); curl(clip, N, FIST); level(clip, N); G = grips(clip, N)
 write('bench_press', clip, N, [(BENCH, 'show', None)] + barbell_props(G))
-clip, N = old_clip('pullup'); G = grips(clip, N)
+clip, N = old_clip('pullup'); curl(clip, N, FIST); level(clip, N); G = grips(clip, N)
 gm = np.mean([(g['gl']+g['gr'])/2 for g in G], 0)
 pb_pos = oacc(old.meshes[[n for n in old.nodes if n.name == 'PullupBar'][0].mesh].primitives[0].attributes.POSITION)
 BY = pb_pos[:, 1].max()-0.25
@@ -285,6 +337,8 @@ write('pullup', clip, N, [(PULL, 'show', None)])
 CLIPS = __import__('json').loads(open('clips.json').read())
 for c in CLIPS:
     clip, N = load(c['file'], c.get('from', 0), c.get('to'), c.get('pingpong', False))
+    curl(clip, N, FIST if c['prop'] in ('barbell', 'dumbbells', 'kettlebell') else FLAT if c['name'] == 'plank' else RELAX)
+    level(clip, N, shoulders=c.get('symmetric', True))
     G = grips(clip, N) if c['prop'] != 'none' and c['prop'] != 'treadmill' else None
     props = []
     if c['prop'] == 'barbell': props = barbell_props(G, c.get('drop', 0))
