@@ -2,7 +2,7 @@
    Маршруты: пустой хеш = каталог, #<id упражнения> = страница упражнения. */
 (function () {
   const D = window.EXERFLY;
-  const MODEL_SRC = window.EXERFLY_MODEL_SRC || 'models/exercises.glb';
+  const MODELS = window.EXERFLY_MODELS || { m: 'models/exercises.glb', f: 'models/exercises_f.glb' };
   const LANGS = ['sk', 'en', 'uk', 'ru'];
   const DEFAULT_LANG = 'sk';
   const app = document.getElementById('app');
@@ -16,7 +16,7 @@
   };
   const S = {
     lang: LANGS.includes(store.get('exerfly-lang')) ? store.get('exerfly-lang') : DEFAULT_LANG,
-    q: '', group: null, speed: 1, glow: store.get('exerfly-glow') !== '0', muscles: new Set(), equipment: new Set(), levels: new Set(), only3d: false, panel: false
+    q: '', group: null, speed: 1, who: store.get('exerfly-character') === 'f' ? 'f' : 'm', glow: false, /* подсветка мышц временно выключена */ muscles: new Set(), equipment: new Set(), levels: new Set(), only3d: false, panel: false
   };
   const L = () => D.LANG[S.lang];
   const T = () => L().ui;
@@ -317,13 +317,18 @@
     document.title = x.name + ' · Exerfly';
     const md = ex.model, reps = fmtReps(ex);
     const stage = md ? `<div class="stage">
-        <model-viewer id="mv" src="${MODEL_SRC}" animation-name="${md.variants[0].anim}" autoplay camera-controls
+        <model-viewer id="mv" src="${MODELS[S.who]}" animation-name="${md.variants[0].anim}" autoplay camera-controls
           environment-image="neutral" exposure="1.05" shadow-intensity="1.1" shadow-softness="0.9" field-of-view="28deg"
           camera-target="${md.target}" camera-orbit="${md.orbit}" min-camera-orbit="auto 20deg 1.5m" max-camera-orbit="auto 88deg ${md.max}"
           interaction-prompt="none" touch-action="pan-y" alt="${esc(x.name)}"></model-viewer>
         <span class="hint" aria-hidden="true">${esc(t.drag)}</span>
-        ${md.variants.length > 1 ? `<div class="seg" role="group" aria-label="${esc(t.variant)}">${md.variants.map((v, i) =>
-          `<button type="button" data-anim="${v.anim}" aria-pressed="${i === 0}">${esc(t.variants[v.label] || v.label)}</button>`).join('')}</div>` : ''}
+        <div class="stage-top">
+          <div class="seg who" role="group" aria-label="${esc(t.character)}">
+            ${['m', 'f'].map(v => `<button type="button" data-who="${v}" aria-pressed="${S.who === v}">${esc(v === 'm' ? t.male : t.female)}</button>`).join('')}
+          </div>
+          ${md.variants.length > 1 ? `<div class="seg variants" role="group" aria-label="${esc(t.variant)}">${md.variants.map((v, i) =>
+            `<button type="button" data-anim="${v.anim}" aria-pressed="${i === 0}">${esc(t.variants[v.label] || v.label)}</button>`).join('')}</div>` : ''}
+        </div>
         <div class="player">
           <button type="button" class="pbtn" id="pp" aria-label="${esc(t.pause)}" title="${esc(t.pause)}">
             <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
@@ -333,7 +338,7 @@
           <div class="speed" role="group" aria-label="${esc(t.speed)}">
             ${[1, 0.5, 0.25].map(v => `<button type="button" data-speed="${v}" aria-pressed="${v === S.speed}">${v === 1 ? '1×' : v === 0.5 ? '0.5×' : '0.25×'}</button>`).join('')}
           </div>
-          <button type="button" class="glow-btn" id="glow" aria-pressed="${S.glow}">
+          <button type="button" class="glow-btn" id="glow" aria-pressed="false" disabled title="${esc(t.soon)}">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3 4.9 4.9M19.1 19.1l-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/><circle cx="12" cy="12" r="4"/></svg>
             <span>${esc(t.glow)}</span>
           </button>
@@ -386,45 +391,14 @@
   }
 
   /* ---------- плеер: пауза, скорость, фаза, подсветка мышц ---------- */
-  const MUSCLE_SRC = window.EXERFLY_MUSCLE_SRC || 'models/muscles.png';
-  const HEAT = [255, 90, 54];
-  let muscleData = null;
-  function loadMuscles() {
-    if (muscleData) return muscleData;
-    muscleData = new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-        const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
-        resolve(ctx.getImageData(0, 0, c.width, c.height));
-      };
-      img.onerror = reject; img.src = MUSCLE_SRC;
-    });
-    return muscleData;
-  }
-  // карта мышц (индекс в красном канале: k*16+8) → текстура свечения для конкретного упражнения
-  async function glowTexture(ex) {
-    const src = await loadMuscles(), W = src.width, Hh = src.height;
-    const pri = new Set(ex.muscles.primary.map(k => D.MUSCLE_KEYS.indexOf(k) + 1));
-    const sec = new Set(ex.muscles.secondary.map(k => D.MUSCLE_KEYS.indexOf(k) + 1));
-    const c = document.createElement('canvas'); c.width = W; c.height = Hh;
-    const ctx = c.getContext('2d'); const out = ctx.createImageData(W, Hh);
-    for (let i = 0; i < src.data.length; i += 4) {
-      const k = Math.round((src.data[i] - 8) / 16);
-      const a = pri.has(k) ? 1 : sec.has(k) ? 0.35 : 0;
-      out.data[i] = HEAT[0] * a; out.data[i + 1] = HEAT[1] * a; out.data[i + 2] = HEAT[2] * a; out.data[i + 3] = 255;
-    }
-    ctx.putImageData(out, 0, 0);
-    const soft = document.createElement('canvas'); soft.width = W; soft.height = Hh;
-    const sctx = soft.getContext('2d'); sctx.fillStyle = '#000'; sctx.fillRect(0, 0, W, Hh);
-    sctx.filter = 'blur(5px)'; sctx.drawImage(c, 0, 0);
-    return soft.toDataURL('image/png');
-  }
+  // слой мышц в модели: материалы M_<мышца>, у каждого меняем прозрачность
+  const GLOW = [1.0, 0.35, 0.21];
+  const glowAlpha = (ex, key) => ex.muscles.primary.includes(key) ? 0.88 : ex.muscles.secondary.includes(key) ? 0.38 : 0;
 
   function setupPlayer(mv, ex) {
     const t = T(), pp = document.getElementById('pp'), scrub = document.getElementById('scrub'), glowBtn = document.getElementById('glow');
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let dragging = false, mat = null, glowReady = false;
+    let dragging = false;
     const setPaused = paused => {
       pp.classList.toggle('paused', paused);
       pp.setAttribute('aria-label', paused ? t.play : t.pause); pp.title = paused ? t.play : t.pause;
@@ -439,36 +413,44 @@
       S.speed = +b.dataset.speed; mv.timeScale = S.speed;
       app.querySelectorAll('.speed button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
     }));
-    app.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    app.querySelectorAll('.variants button').forEach(b => b.addEventListener('click', () => {
       mv.animationName = b.dataset.anim; mv.play(); setPaused(false);
-      app.querySelectorAll('.seg button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+      app.querySelectorAll('.variants button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+    }));
+    // персонаж: мужчина / женщина, выбор запоминается для следующих упражнений
+    app.querySelectorAll('.who button').forEach(b => b.addEventListener('click', () => {
+      if (S.who === b.dataset.who) return;
+      S.who = b.dataset.who; store.set('exerfly-character', S.who);
+      app.querySelectorAll('.who button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+      overlay = []; body = null; mv.src = MODELS[S.who]; setPaused(false);
     }));
 
-    async function applyGlow() {
-      if (!mat) return;
-      if (S.glow && !glowReady) {
-        try { const tex = await mv.createTexture(await glowTexture(ex)); mat.emissiveTexture.setTexture(tex); glowReady = true; }
-        catch (e) { S.glow = false; glowBtn.setAttribute('aria-pressed', 'false'); return; }
-      }
-      if (!S.glow) mat.setEmissiveFactor([0, 0, 0]);
-    }
+    let overlay = [], body = null, bodyDim = -1;
     glowBtn.addEventListener('click', () => {
       S.glow = !S.glow; store.set('exerfly-glow', S.glow ? '1' : '0');
-      glowBtn.setAttribute('aria-pressed', String(S.glow)); applyGlow();
+      glowBtn.setAttribute('aria-pressed', String(S.glow));
     });
     mv.addEventListener('load', () => {
       mv.timeScale = S.speed;
-      mat = mv.model && mv.model.materials.find(m => m.name === 'Athlete');
-      applyGlow();
+      const mats = mv.model ? mv.model.materials : [];
+      overlay = mats.filter(m => m.name && m.name.startsWith('M_')).map(m => ({ m, key: m.name.slice(2), a: -1 }));
+      body = mats.find(m => m.name === 'Athlete') || null; bodyDim = -1;
+
     });
 
     (function tick(now) {
       if (!mv.isConnected) return;
       const d = mv.duration || 0;
       if (d && !dragging) scrub.value = ((mv.currentTime % d) / d).toFixed(3);
-      if (mat && S.glow && glowReady) {
-        const k = reduce ? 0.85 : 0.6 + 0.3 * (0.5 + 0.5 * Math.sin(now / 260));
-        mat.setEmissiveFactor([k, k, k]);
+      if (overlay.length) {
+        const k = S.glow ? (reduce ? 1 : 0.78 + 0.22 * Math.sin(now / 320)) : 0;
+        // в режиме подсветки тело приглушается, чтобы мышцы читались лучше
+        const dim = S.glow ? 0.42 : 1;
+        if (body && dim !== bodyDim) { body.pbrMetallicRoughness.setBaseColorFactor([dim, dim, dim * 1.04, 1]); bodyDim = dim; }
+        for (const o of overlay) {
+          const a = Math.round(glowAlpha(ex, o.key) * k * 100) / 100;
+          if (a !== o.a) { o.m.pbrMetallicRoughness.setBaseColorFactor([GLOW[0], GLOW[1], GLOW[2], a]); o.a = a; }
+        }
       }
       requestAnimationFrame(tick);
     })(performance.now());
