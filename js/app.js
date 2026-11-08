@@ -556,6 +556,15 @@
     firstRoute = false;
   }
   window.addEventListener('hashchange', () => route());
+  // логотип: сброс всех фильтров и поиска + главная страница сверху
+  document.getElementById('logo-link').addEventListener('click', e => {
+    e.preventDefault();
+    Object.assign(S, { q: '', group: null, only3d: false, panel: false, tbCollapsed: null });
+    S.muscles.clear(); S.equipment.clear(); S.levels.clear();
+    catalogScroll = 0;
+    if (location.hash.slice(1)) location.hash = '';               // hashchange → route() → каталог
+    else { renderCatalog(); window.scrollTo(0, 0); }
+  });
   renderHeader();
   route();
 })();

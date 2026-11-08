@@ -2,7 +2,7 @@
 python3 build2.py <персонаж.glb> <старая exercises.glb> <текстуры_dir> <выход.glb>"""
 import sys, io, numpy as np
 from PIL import Image
-sys.path.insert(0, __import__('os').path.dirname(__file__))
+sys.path.insert(0, '/home/claude/exerfly_src')
 from props import Geo
 from lib import *
 
@@ -321,51 +321,58 @@ def barbell_props(G, drop=0.0):
 
 
 FIST, RELAX, FLAT = (70, 85, 55), (15, 20, 10), (5, 5, 5)
-for name, hand in (('pushup', FLAT), ('squat', RELAX), ('squat_arms_forward', RELAX)):
+import os
+PROC_ONLY = bool(os.environ.get('PROC_ONLY'))
+for name, hand in ([] if PROC_ONLY else (('pushup', FLAT), ('squat', RELAX), ('squat_arms_forward', RELAX))):
     clip, N = old_clip(name); curl(clip, N, hand); level(clip, N); write(name, clip, N, [])
-clip, N = old_clip('bench_press'); curl(clip, N, FIST); level(clip, N); G = grips(clip, N)
-write('bench_press', clip, N, [(BENCH, 'show', None)] + barbell_props(G))
-clip, N = old_clip('pullup'); curl(clip, N, FIST); level(clip, N); G = grips(clip, N)
-gm = np.mean([(g['gl']+g['gr'])/2 for g in G], 0)
-pb_pos = oacc(old.meshes[[n for n in old.nodes if n.name == 'PullupBar'][0].mesh].primitives[0].attributes.POSITION)
-BY = pb_pos[:, 1].max()-0.25
-spread = np.ptp(np.array([(g['gl']+g['gr'])/2 for g in G]), 0)
-print('  pullup hands spread (m):', spread.round(3))
-dst.nodes[PULL].translation = [0.0, float(gm[1]-BY), float(gm[2])]
-write('pullup', clip, N, [(PULL, 'show', None)])
+if not PROC_ONLY:
+    clip, N = old_clip('bench_press'); curl(clip, N, FIST); level(clip, N); G = grips(clip, N)
+    write('bench_press', clip, N, [(BENCH, 'show', None)] + barbell_props(G))
+    clip, N = old_clip('pullup'); curl(clip, N, FIST); level(clip, N); G = grips(clip, N)
+    gm = np.mean([(g['gl']+g['gr'])/2 for g in G], 0)
+    pb_pos = oacc(old.meshes[[n for n in old.nodes if n.name == 'PullupBar'][0].mesh].primitives[0].attributes.POSITION)
+    BY = pb_pos[:, 1].max()-0.25
+    spread = np.ptp(np.array([(g['gl']+g['gr'])/2 for g in G]), 0)
+    print('  pullup hands spread (m):', spread.round(3))
+    dst.nodes[PULL].translation = [0.0, float(gm[1]-BY), float(gm[2])]
+    write('pullup', clip, N, [(PULL, 'show', None)])
 
-CLIPS = __import__('json').loads(open('clips.json').read())
-for c in CLIPS:
-    clip, N = load(c['file'], c.get('from', 0), c.get('to'), c.get('pingpong', False))
-    curl(clip, N, FIST if c['prop'] in ('barbell', 'dumbbells', 'kettlebell') else FLAT if c['name'] == 'plank' else RELAX)
-    level(clip, N, shoulders=c.get('symmetric', True))
-    G = grips(clip, N) if c['prop'] != 'none' and c['prop'] != 'treadmill' else None
-    props = []
-    if c['prop'] == 'barbell': props = barbell_props(G, c.get('drop', 0))
-    elif c['prop'] == 'dumbbells':
-        for node, side in ((DB[0], 'l'), (DB[1], 'r')):
-            t = [g['g'+side] for g in G]; r = fix_sign([look(g['a'+side]) for g in G])
-            props += [(node, 'show', None), (node, 'translation', t), (node, 'rotation', r)]
-    elif c['prop'] == 'kettlebell':
-        t = []; r = []
-        for g in G:
-            h = (g['gl']+g['gr'])/2; down = h-g['sh']; down /= np.linalg.norm(down)
-            t.append(h); r.append(look(g['gr']-g['gl'], -down))
-        props = [(KB, 'show', None), (KB, 'translation', t), (KB, 'rotation', fix_sign(r))]
-    elif c['prop'] == 'treadmill':
-        h = clip['Hips']['translation']          # Y вверх, единицы корня (м / S_ROOT)
-        drift = (h[-1, 2]-h[0, 2])*np.arange(N)/(N-1)
-        h[:, 2] -= drift + h[0, 2]               # убрать продвижение вперёд
-        h[:, 1] += DECK/S_ROOT                    # поднять на полотно
-        speed = drift[-1]*S_ROOT/((N-1)/FPS)      # м/с
-        per = SP/speed; T = (N-1)/FPS; k = max(1, round(T/per)); per = T/k
-        times = []; vals = []
-        for i in range(k):
-            times += [i*per, (i+1)*per-1e-4]; vals += [[0, 0, 0], [0, 0, -SP]]
-        times.append(T); vals.append([0, 0, 0])
-        props = [(TREAD, 'show', None), (STRIPES, 'show', None), (STRIPES, 'custom', (np.array(times), np.array(vals, float)))]
-        print('  speed %.2f m/s' % speed)
-    write(c['name'], clip, N, props)
+    CLIPS = __import__('json').loads(open('clips.json').read())
+    for c in CLIPS:
+        clip, N = load(c['file'], c.get('from', 0), c.get('to'), c.get('pingpong', False))
+        curl(clip, N, FIST if c['prop'] in ('barbell', 'dumbbells', 'kettlebell') else FLAT if c['name'] == 'plank' else RELAX)
+        level(clip, N, shoulders=c.get('symmetric', True))
+        G = grips(clip, N) if c['prop'] != 'none' and c['prop'] != 'treadmill' else None
+        props = []
+        if c['prop'] == 'barbell': props = barbell_props(G, c.get('drop', 0))
+        elif c['prop'] == 'dumbbells':
+            for node, side in ((DB[0], 'l'), (DB[1], 'r')):
+                t = [g['g'+side] for g in G]; r = fix_sign([look(g['a'+side]) for g in G])
+                props += [(node, 'show', None), (node, 'translation', t), (node, 'rotation', r)]
+        elif c['prop'] == 'kettlebell':
+            t = []; r = []
+            for g in G:
+                h = (g['gl']+g['gr'])/2; down = h-g['sh']; down /= np.linalg.norm(down)
+                t.append(h); r.append(look(g['gr']-g['gl'], -down))
+            props = [(KB, 'show', None), (KB, 'translation', t), (KB, 'rotation', fix_sign(r))]
+        elif c['prop'] == 'treadmill':
+            h = clip['Hips']['translation']          # Y вверх, единицы корня (м / S_ROOT)
+            drift = (h[-1, 2]-h[0, 2])*np.arange(N)/(N-1)
+            h[:, 2] -= drift + h[0, 2]               # убрать продвижение вперёд
+            h[:, 1] += DECK/S_ROOT                    # поднять на полотно
+            speed = drift[-1]*S_ROOT/((N-1)/FPS)      # м/с
+            per = SP/speed; T = (N-1)/FPS; k = max(1, round(T/per)); per = T/k
+            times = []; vals = []
+            for i in range(k):
+                times += [i*per, (i+1)*per-1e-4]; vals += [[0, 0, 0], [0, 0, -SP]]
+            times.append(T); vals.append([0, 0, 0])
+            props = [(TREAD, 'show', None), (STRIPES, 'show', None), (STRIPES, 'custom', (np.array(times), np.array(vals, float)))]
+            print('  speed %.2f m/s' % speed)
+        write(c['name'], clip, N, props)
+
+
+
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'proc.py')).read())
 
 # ---------- сохранение ----------
 dst.buffers[0].byteLength = len(blob); dst.set_binary_blob(bytes(blob)); dst.save_binary(DST)
