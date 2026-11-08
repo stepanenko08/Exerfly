@@ -203,7 +203,24 @@ main:focus { outline: none; }
 .tb-extra { display: grid; gap: 12px; min-width: 0; }
 .tb-extra:has(> :not(.sr-only)) { margin-top: 12px; }
 .toolbar.stuck { border-bottom-color: var(--line); }
-.toolbar.stuck.collapsed .tb-filter, .toolbar.stuck.collapsed .tb-scroll, .toolbar.stuck.collapsed .tb-extra { display: none; }
+.toolbar.stuck.collapsed .tb-extra { display: none; }
+#tb-sentinel { height: 0; }
+/* телефон: строки панели не появляются/исчезают рывком, а плавно раскрываются и сворачиваются */
+@media (max-width: 767px) {
+  .toolbar .tb-row, .toolbar.stuck .tb-row, .toolbar.stuck.collapsed .tb-row { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "s s" "f t"; row-gap: 0; }
+  .tb-row .mini-search, .toolbar.stuck .tb-row .mini-search {
+    display: block; max-height: 0; opacity: 0; margin-bottom: 0; overflow: hidden; visibility: hidden;
+    transition: max-height .3s ease, opacity .22s ease, margin-bottom .3s ease, visibility 0s linear .3s;
+  }
+  .toolbar.stuck .tb-row .mini-search { max-height: 46px; opacity: 1; margin-bottom: 10px; visibility: visible; transition-delay: 0s; }
+  .toolbar.stuck.collapsed .tb-row .mini-search { margin-bottom: 0; }
+  .tb-filter, .tb-scroll { max-height: 64px; opacity: 1; transition: max-height .3s ease, opacity .22s ease; }
+  .toolbar.stuck.collapsed .tb-filter, .toolbar.stuck.collapsed .tb-scroll { max-height: 0; opacity: 0; overflow: hidden; visibility: hidden; }
+  .toolbar .wrap { transition: padding .3s ease; }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .tb-row .mini-search, .tb-filter, .tb-scroll, .toolbar .wrap { transition: none; }
+}
 /* мини-поиск: появляется, только когда панель прилипла к шапке */
 .mini-search { position: relative; display: none; min-width: 0; }
 .toolbar.stuck .mini-search { display: block; }

@@ -16,7 +16,7 @@
   };
   const S = {
     lang: LANGS.includes(store.get('exerfly-lang')) ? store.get('exerfly-lang') : DEFAULT_LANG,
-    q: '', group: null, speed: 1, who: store.get('exerfly-character') === 'f' ? 'f' : 'm', glow: false, /* подсветка мышц временно выключена */ muscles: new Set(), equipment: new Set(), levels: new Set(), only3d: false, panel: false, tbCollapsed: null, favOnly: false
+    q: '', group: null, speed: 1, who: store.get('exerfly-character') === 'f' ? 'f' : 'm', glow: false, /* подсветка мышц в 3D временно выключена */ muscles: new Set(), equipment: new Set(), levels: new Set(), only3d: false, panel: false, tbCollapsed: null, favOnly: false
   };
   /* избранное — в браузере, как тема и язык */
   const FAV = new Set((() => { try { return JSON.parse(store.get('exerfly-fav') || '[]'); } catch (e) { return []; } })());
@@ -213,6 +213,7 @@
           <div id="heromap"></div>
         </section>
       </section>
+      <div id="tb-sentinel" aria-hidden="true"></div>
       <section class="toolbar" id="tbar" aria-label="${esc(t.filters)}"><div class="wrap">
         <div class="tb-row">
           <div class="mini-search" role="search">
@@ -264,7 +265,11 @@
     const bar = document.getElementById('tbar');
     if (!bar) return;
     const top = parseFloat(getComputedStyle(bar).top) || 0;
-    const stuck = getComputedStyle(bar).position === 'sticky' && bar.getBoundingClientRect().top <= top + 0.5 && window.scrollY > 0;
+    // «прилипла» считаем по метке перед панелью: её положение не зависит от высоты панели,
+    // поэтому смена содержимого панели не вызывает дрожания туда-обратно (+ небольшой запас)
+    const sen = document.getElementById('tb-sentinel'), was = bar.classList.contains('stuck');
+    const sy = sen ? sen.getBoundingClientRect().top : bar.getBoundingClientRect().top;
+    const stuck = getComputedStyle(bar).position === 'sticky' && window.scrollY > 0 && (was ? sy < top + 8 : sy < top - 2);
     const narrow = narrowMQ.matches, collapsed = narrow && stuck && tbCollapsed() && !S.panel;   // открытые фильтры не прячем
     bar.classList.toggle('stuck', stuck);
     bar.classList.toggle('collapsed', collapsed);
@@ -621,8 +626,8 @@
 
   /* ---------- плеер: пауза, скорость, фаза, подсветка мышц ---------- */
   // слой мышц в модели: материалы M_<мышца>, у каждого меняем прозрачность
-  const GLOW = [1.0, 0.35, 0.21];
-  const glowAlpha = (ex, key) => ex.muscles.primary.includes(key) ? 0.88 : ex.muscles.secondary.includes(key) ? 0.38 : 0;
+  const GLOW = [1.0, 0.30, 0.16];                    // ближе к фирменному оранжевому
+  const glowAlpha = (ex, key) => ex.muscles.primary.includes(key) ? 0.82 : ex.muscles.secondary.includes(key) ? 0.34 : 0;
 
   function setupPlayer(mv, ex) {
     const t = T(), pp = document.getElementById('pp'), scrub = document.getElementById('scrub'), glowBtn = document.getElementById('glow');
@@ -695,9 +700,9 @@
       const d = mv.duration || 0;
       if (d && !dragging) scrub.value = ((mv.currentTime % d) / d).toFixed(3);
       if (overlay.length) {
-        const k = S.glow ? (reduce ? 1 : 0.78 + 0.22 * Math.sin(now / 320)) : 0;
+        const k = S.glow ? 1 : 0;                       // ровная подсветка, без мигания
         // в режиме подсветки тело приглушается, чтобы мышцы читались лучше
-        const dim = S.glow ? 0.42 : 1;
+        const dim = S.glow ? 0.55 : 1;
         if (body && dim !== bodyDim) { body.pbrMetallicRoughness.setBaseColorFactor([dim, dim, dim * 1.04, 1]); bodyDim = dim; }
         for (const o of overlay) {
           const a = Math.round(glowAlpha(ex, o.key) * k * 100) / 100;
