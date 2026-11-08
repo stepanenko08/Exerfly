@@ -19,7 +19,7 @@ EXERFLY.LANG.ru = {
     footer: 'Рекомендации ориентировочные, подбирай вес под себя.', skip: 'Перейти к содержимому', mainNav: 'Главное меню', homeLabel: 'Exerfly – главная', metaDesc: 'Exerfly — каталог упражнений с 3D-анимациями, техникой и картой задействованных мышц.', clearSearch: 'Очистить поиск', variant: 'Вариант упражнения', breadcrumbs: 'Навигация',
     play: 'Воспроизвести', pause: 'Пауза', speed: 'Скорость', glow: 'Подсветить мышцы', phase: 'Фаза движения',
     character: 'Персонаж', male: 'Мужчина', female: 'Женщина',
-    darkMode: 'Тёмная тема', collapse: 'Свернуть меню', expand: 'Развернуть меню', language: 'Язык', open: 'Открыть'
+    darkMode: 'Тёмная тема', collapseFilters: 'Закрыть фильтры', collapse: 'Свернуть меню', expand: 'Развернуть меню', language: 'Язык', open: 'Открыть'
   },
   muscles: {
     chest: 'Грудные', shoulders: 'Дельты', biceps: 'Бицепс', triceps: 'Трицепс', forearms: 'Предплечья',

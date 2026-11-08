@@ -19,7 +19,7 @@ EXERFLY.LANG.uk = {
     footer: 'Рекомендації орієнтовні, підбирай вагу під себе.', skip: 'Перейти до вмісту', mainNav: 'Головне меню', homeLabel: 'Exerfly – головна', metaDesc: 'Exerfly — каталог вправ із 3D-анімаціями, технікою та картою задіяних м’язів.', clearSearch: 'Очистити пошук', variant: 'Варіант вправи', breadcrumbs: 'Навігація',
     play: 'Відтворити', pause: 'Пауза', speed: 'Швидкість', glow: 'Підсвітити м’язи', phase: 'Фаза руху',
     character: 'Персонаж', male: 'Чоловік', female: 'Жінка',
-    darkMode: 'Темна тема', collapse: 'Згорнути меню', expand: 'Розгорнути меню', language: 'Мова', open: 'Відкрити'
+    darkMode: 'Темна тема', collapseFilters: 'Закрити фільтри', collapse: 'Згорнути меню', expand: 'Розгорнути меню', language: 'Мова', open: 'Відкрити'
   },
   muscles: {
     chest: 'Грудні', shoulders: 'Дельти', biceps: 'Біцепс', triceps: 'Трицепс', forearms: 'Передпліччя',

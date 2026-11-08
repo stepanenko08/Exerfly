@@ -242,7 +242,11 @@
     const onType = src => { S.q = src.value; (src === q ? q2 : q).value = S.q; app.querySelectorAll('[data-act="clear-q"]').forEach(b => { b.hidden = !S.q; }); refresh(); };
     q.addEventListener('input', () => onType(q));
     q2.addEventListener('input', () => onType(q2));
-    document.getElementById('tb-toggle').addEventListener('click', () => { S.tbCollapsed = !tbCollapsed(); syncStuck(); });
+    // стрелка: на телефоне сворачивает панель, на компьютере закрывает открытые фильтры
+    document.getElementById('tb-toggle').addEventListener('click', () => {
+      if (narrowMQ.matches) { S.tbCollapsed = !tbCollapsed(); syncStuck(); }
+      else closePanel();
+    });
     // стрелки прокрутки групп мышц
     const tabs = document.getElementById('tb-tabs');
     document.querySelectorAll('.tb-arrow').forEach(btn => btn.addEventListener('click', () => {
@@ -263,14 +267,22 @@
     if (!bar) return;
     const top = parseFloat(getComputedStyle(bar).top) || 0;
     const stuck = getComputedStyle(bar).position === 'sticky' && bar.getBoundingClientRect().top <= top + 0.5 && window.scrollY > 0;
-    const collapsed = stuck && tbCollapsed();
+    const narrow = narrowMQ.matches, collapsed = narrow && stuck && tbCollapsed();
     bar.classList.toggle('stuck', stuck);
     bar.classList.toggle('collapsed', collapsed);
     const btn = document.getElementById('tb-toggle'), t = T();
+    bar.classList.toggle('panel-open', S.panel);
+    // открытые фильтры в прилипшей панели: ограничиваем высоту экраном, чтобы листались сами фильтры, а не страница
+    const pnl = document.getElementById('panel');
+    if (pnl) {
+      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      pnl.style.maxHeight = stuck ? Math.max(160, vh - pnl.getBoundingClientRect().top - 12) + 'px' : '';
+    }
     if (btn) {
-      btn.setAttribute('aria-expanded', String(!collapsed));
-      btn.setAttribute('aria-label', collapsed ? t.expand : t.collapse);
-      btn.title = collapsed ? t.expand : t.collapse;
+      const label = narrow ? (collapsed ? t.expand : t.collapse) : t.collapseFilters;
+      btn.setAttribute('aria-controls', narrow ? 'tb-filter tb-scroll toolbar' : 'panel');
+      btn.setAttribute('aria-expanded', String(narrow ? !collapsed : S.panel));
+      btn.setAttribute('aria-label', label); btn.title = label;
     }
     // если фокус был в мини-поиске, а панель отлипла — переносим его в большой поиск
     if (!stuck && document.activeElement && document.activeElement.id === 'q2') document.getElementById('q').focus({ preventScroll: true });
@@ -295,9 +307,23 @@
   }
   document.addEventListener('focusin', e => { if (e.target.closest && e.target.closest('#tb-tabs')) revealTab(e.target); });
 
+  function closePanel() {
+    if (!S.panel) return;
+    S.panel = false; refresh();
+    const fb = app.querySelector('[data-act="panel"]'); if (fb) fb.focus({ preventScroll: true });
+  }
+  // клик вне панели фильтров (и не по кнопке «Фильтры») — закрыть её
+  document.addEventListener('click', e => {
+    if (!S.panel || location.hash.slice(1)) return;
+    const inside = e.composedPath().some(el => el.id === 'panel' || el.id === 'tb-toggle' || (el.dataset && el.dataset.act === 'panel'));
+    if (!inside) closePanel();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.panel && !location.hash.slice(1)) closePanel(); });
+
   let stuckRAF = 0;
   addEventListener('scroll', () => { if (!stuckRAF) stuckRAF = requestAnimationFrame(() => { stuckRAF = 0; syncStuck(); }); }, { passive: true });
   addEventListener('resize', syncStuck);
+  if (window.visualViewport) visualViewport.addEventListener('resize', syncStuck);
 
   function refresh() {
     const t = T(), list = filtered(), n = activeCount() + (S.q.trim() ? 1 : 0);
@@ -328,7 +354,7 @@
     tabsEl.innerHTML = groupTabs;
     tabsEl.scrollLeft = keep;
     document.getElementById('toolbar').innerHTML = row + panel;
-    syncArrows();
+    syncArrows(); syncStuck();
 
     const res = document.getElementById('results');
     if (!list.length) {
