@@ -286,13 +286,17 @@ ul.grid { list-style: none; margin: 0; padding: 0; }
 .empty p { margin: 0 0 8px; color: var(--muted); }
 
 /* ---------- body map ---------- */
-.bm .skin { fill: var(--body-2); }
-.bm .base { fill: var(--body); }
-.bm .m { fill: var(--body-2); transition: fill .15s; }
+.bm { --bm-idle: color-mix(in srgb, var(--body-2) 86%, var(--ink) 14%); }   /* мышцы чуть контрастнее тела */
+.bm .bm-body, #bm-sym .bm-body { fill: var(--body); }
+.bm .m { fill: var(--bm-idle); transition: fill .15s; }
 .bm .m.sec { fill: var(--heat-2); }
 .bm .m.pri { fill: var(--heat); }
 .bm text { fill: var(--muted); font: 600 7px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
 .bm.interactive .m { cursor: pointer; }
+/* без рамки-прямоугольника вокруг мышцы и без выделения подписей при клике; с клавиатуры — обводка по контуру */
+.bm { user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.bm.interactive .m:focus, .bm.interactive:focus, .bm.interactive .m:focus:not(:focus-visible) { outline: none !important; }
+.bm.interactive .m:focus-visible { outline: none; stroke: var(--ink); stroke-width: 1.1; paint-order: stroke; }
 .bm.interactive .m:hover { fill: color-mix(in srgb, var(--heat) 45%, var(--body-2)); }
 .bm.interactive .m.pri:hover { fill: var(--heat); }
 
@@ -366,9 +370,8 @@ ul.grid { list-style: none; margin: 0; padding: 0; }
 .facts b { font: 700 20px/1.15 var(--f-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .facts small { font-size: 11px; color: var(--muted); font-weight: 600; }
 
-.mus { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 16px; align-items: center; }
-.mus svg { width: 100%; height: auto; }
-@media (max-width: 420px) { .mus { grid-template-columns: 110px minmax(0, 1fr); } }
+.mus { display: grid; gap: 16px; }
+.mus svg { width: 100%; max-width: 360px; height: auto; justify-self: center; }
 .mlist { display: grid; gap: 12px; }
 .mlist .lbl { font-size: 12px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 .sw { width: 10px; height: 10px; border-radius: 3px; }

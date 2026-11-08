@@ -55,45 +55,31 @@
   }
 
   /* ---------- схема мышц ---------- */
+  /* схема мышц: одна общая копия контуров (symbol), карточки ссылаются на неё через <use> и красят мышцы CSS-переменными;
+     интерактивная схема на главной — со своими контурами, чтобы по каждой мышце можно было нажать */
+  const BODY = D.BODY;
+  const BM_VIEWS = ['front', 'back'];
+  (function injectBodySymbol() {
+    let s = '';
+    for (const v of BM_VIEWS) for (const [k, d] of Object.entries(BODY[v]))
+      s += k === '_body' ? `<path d="${d}" style="fill:var(--body)"/>` : `<path d="${d}" style="fill:var(--bm-${k},var(--bm-idle))"/>`;
+    document.body.insertAdjacentHTML('afterbegin', `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="bm-sym" viewBox="0 0 ${BODY.w} ${BODY.h}">${s}</symbol></svg>`);
+  })();
   function bodyMap(primary, secondary, opts = {}) {
     const pri = new Set(primary), sec = new Set(secondary || []);
-    const m = k => `class="m ${pri.has(k) ? 'pri' : sec.has(k) ? 'sec' : ''}" data-m="${k}"${opts.interactive ? ` role="button" tabindex="0" aria-pressed="${pri.has(k)}" aria-label="${esc(mName(k))}"` : ''}`;
-    const tip = k => opts.interactive ? `<title>${esc(mName(k))}</title>` : '';
-    const pair = (cx, dx, f) => f(cx - dx, -1) + f(cx + dx, 1);
-    const fig = (cx, view) => {
-      let s = '';
-      s += `<circle class="skin" cx="${cx}" cy="16" r="10"/>`;
-      s += `<rect class="skin" x="${cx - 5}" y="24" width="10" height="10"/>`;
-      s += `<rect class="base" x="${cx - 21}" y="33" width="42" height="70" rx="10"/>`;
-      s += `<rect class="base" x="${cx - 19}" y="96" width="38" height="20" rx="8"/>`;
-      s += pair(cx, 34, x => `<circle class="skin" cx="${x}" cy="113" r="4.5"/>`);
-      s += pair(cx, 10, x => `<ellipse class="skin" cx="${x}" cy="204" rx="7" ry="3.5"/>`);
-      s += pair(cx, 25, x => `<ellipse ${m('shoulders')} cx="${x}" cy="42" rx="8.5" ry="8.5">${tip('shoulders')}</ellipse>`);
-      s += pair(cx, 34, x => `<rect ${m('forearms')} x="${x - 4}" y="80" width="8" height="28" rx="4">${tip('forearms')}</rect>`);
-      if (view === 'front') {
-        s += pair(cx, 31.5, x => `<rect ${m('biceps')} x="${x - 4.5}" y="51" width="9" height="27" rx="4.5">${tip('biceps')}</rect>`);
-        s += pair(cx, 10.5, x => `<rect ${m('chest')} x="${x - 9.5}" y="36" width="19" height="20" rx="7">${tip('chest')}</rect>`);
-        s += `<rect ${m('abs')} x="${cx - 7.5}" y="59" width="15" height="38" rx="5">${tip('abs')}</rect>`;
-        s += pair(cx, 14, x => `<rect ${m('obliques')} x="${x - 4}" y="61" width="8" height="33" rx="4">${tip('obliques')}</rect>`);
-        s += pair(cx, 10, x => `<rect ${m('quads')} x="${x - 8}" y="116" width="16" height="45" rx="8">${tip('quads')}</rect>`);
-        s += pair(cx, 10, x => `<rect ${m('calves')} x="${x - 6}" y="165" width="12" height="35" rx="6">${tip('calves')}</rect>`);
-      } else {
-        s += pair(cx, 31.5, x => `<rect ${m('triceps')} x="${x - 4.5}" y="51" width="9" height="27" rx="4.5">${tip('triceps')}</rect>`);
-        s += `<polygon ${m('traps')} points="${cx - 5},28 ${cx + 5},28 ${cx + 18},38 ${cx + 6},62 ${cx - 6},62 ${cx - 18},38">${tip('traps')}</polygon>`;
-        s += pair(cx, 0, (x, sg) => { const p = (dx, y) => `${cx + sg * dx},${y}`;
-          return `<polygon ${m('lats')} points="${p(20, 47)} ${p(8, 62)} ${p(7, 90)} ${p(15, 87)} ${p(20, 66)}">${tip('lats')}</polygon>`; });
-        s += `<rect ${m('lower_back')} x="${cx - 5.5}" y="65" width="11" height="31" rx="3">${tip('lower_back')}</rect>`;
-        s += pair(cx, 9.5, x => `<ellipse ${m('glutes')} cx="${x}" cy="108" rx="9.5" ry="10">${tip('glutes')}</ellipse>`);
-        s += pair(cx, 10, x => `<rect ${m('hamstrings')} x="${x - 8}" y="121" width="16" height="40" rx="8">${tip('hamstrings')}</rect>`);
-        s += pair(cx, 10, x => `<rect ${m('calves')} x="${x - 6.5}" y="165" width="13" height="34" rx="6.5">${tip('calves')}</rect>`);
-      }
-      return s;
-    };
     const labels = opts.labels === false ? '' :
-      `<text x="50" y="223" text-anchor="middle">${esc(T().front)}</text><text x="150" y="223" text-anchor="middle">${esc(T().back)}</text>`;
-    const h = opts.labels === false ? 210 : 228;
-    const aria = opts.interactive ? `aria-label="${esc(T().fMusclesHint)}"` : `role="img" aria-label="${esc(primary.map(mName).join(', '))}"`;
-    return `<svg class="bm${opts.interactive ? ' interactive' : ''}" viewBox="0 0 200 ${h}" ${aria}>${fig(50, 'front')}${fig(150, 'back')}${labels}</svg>`;
+      `<text x="${BODY.cx.front}" y="${BODY.h + 9}" text-anchor="middle">${esc(T().front)}</text><text x="${BODY.cx.back}" y="${BODY.h + 9}" text-anchor="middle">${esc(T().back)}</text>`;
+    const vb = `0 0 ${BODY.w} ${BODY.h + (opts.labels === false ? 0 : 12)}`;
+    if (!opts.interactive) {
+      const vars = [...pri].map(k => `--bm-${k}:var(--heat)`).concat([...sec].filter(k => !pri.has(k)).map(k => `--bm-${k}:var(--heat-2)`)).join(';');
+      return `<svg class="bm" viewBox="${vb}" style="${vars}" role="img" aria-label="${esc(primary.map(mName).join(', '))}"><use href="#bm-sym" width="${BODY.w}" height="${BODY.h}"/>${labels}</svg>`;
+    }
+    let s = '';
+    for (const v of BM_VIEWS) for (const [k, d] of Object.entries(BODY[v])) {
+      if (k === '_body') { s += `<path class="bm-body" d="${d}"/>`; continue; }
+      s += `<path class="m ${pri.has(k) ? 'pri' : sec.has(k) ? 'sec' : ''}" data-m="${k}" role="button" tabindex="0" aria-pressed="${pri.has(k)}" aria-label="${esc(mName(k))}" d="${d}"><title>${esc(mName(k))}</title></path>`;
+    }
+    return `<svg class="bm interactive" viewBox="${vb}" aria-label="${esc(T().fMusclesHint)}">${s}${labels}</svg>`;
   }
 
   const levelHTML = n => `<span class="level">${esc(L().levels[n])}<span class="bars" aria-hidden="true"><i class="${n >= 1 ? 'on' : ''}"></i><i class="${n >= 2 ? 'on' : ''}"></i><i class="${n >= 3 ? 'on' : ''}"></i></span></span>`;
@@ -457,6 +443,8 @@
     if (el && el.dataset.act !== 'only3d') onCatalogAction(el);
   });
   app.addEventListener('change', e => { if (e.target.dataset.act === 'only3d') onCatalogAction(e.target); });
+  // мышью/пальцем мышца не получает фокус — иначе браузер на миг рисует рамку фокуса (клавиатурой фокус остаётся)
+  app.addEventListener('mousedown', e => { if (e.target.closest && e.target.closest('.bm.interactive [data-m]')) e.preventDefault(); });
   app.addEventListener('keydown', e => {
     const m = e.target.closest && e.target.closest('.bm.interactive [data-m]');
     if (m && (e.key === 'Enter' || e.key === ' ')) {
