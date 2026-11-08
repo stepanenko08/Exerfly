@@ -235,7 +235,8 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
         </button>
       </div></section>
-      <section class="wrap results" id="results"></section>`;
+      <section class="wrap results" id="results"></section>
+      <div id="sheet-root"></div>`;
     document.getElementById('search-form').addEventListener('submit', e => e.preventDefault());
     const q = document.getElementById('q');
     const q2 = document.getElementById('q2');
@@ -274,7 +275,7 @@
     bar.classList.toggle('panel-open', S.panel);
     // открытые фильтры в прилипшей панели: ограничиваем высоту экраном, чтобы листались сами фильтры, а не страница
     const pnl = document.getElementById('panel');
-    if (pnl) {
+    if (pnl && !pnl.classList.contains('sheet')) {
       const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       pnl.style.maxHeight = stuck ? Math.max(160, vh - pnl.getBoundingClientRect().top - 12) + 'px' : '';
     }
@@ -325,6 +326,28 @@
   addEventListener('resize', syncStuck);
   if (window.visualViewport) visualViewport.addEventListener('resize', syncStuck);
 
+  let sheetOpen = false;
+  function renderSheet(open, fields, n) {
+    const root = document.getElementById('sheet-root'); if (!root) return;
+    const t = T(), body = root.querySelector('.sheet-body'), keep = body ? body.scrollTop : 0;
+    document.documentElement.classList.toggle('sheet-open', open);
+    if (!open) { root.innerHTML = ''; sheetOpen = false; return; }
+    root.innerHTML = `<div class="sheet-backdrop" data-act="panel" aria-hidden="true"></div>
+      <div class="panel sheet${sheetOpen ? '' : ' enter'}" id="panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <div class="sheet-head"><span class="sheet-grip" aria-hidden="true"></span><h2 id="sheet-title">${esc(t.filters)}</h2>
+          <button type="button" class="sheet-x" data-act="panel" aria-label="${esc(t.collapseFilters)}">×</button></div>
+        <div class="sheet-body">${fields}</div>
+        <div class="sheet-foot">
+          <button type="button" class="linkbtn" data-act="reset">${esc(t.reset)}</button>
+          <button type="button" class="pill sheet-go" data-act="panel">${esc(t.showResults)} · ${n}</button>
+        </div>
+      </div>`;
+    root.querySelector('.sheet-body').scrollTop = keep;
+    if (!sheetOpen) root.querySelector('.sheet-x').focus({ preventScroll: true });
+    sheetOpen = true;
+  }
+  narrowMQ.addEventListener && narrowMQ.addEventListener('change', () => { if (!location.hash.slice(1) && document.getElementById('tbar')) refresh(); });
+
   function refresh() {
     const t = T(), list = filtered(), n = activeCount() + (S.q.trim() ? 1 : 0);
     document.getElementById('heromap').innerHTML = bodyMap([...S.muscles], [], { interactive: true });
@@ -343,17 +366,19 @@
         <button type="button" class="linkbtn" data-act="reset">${esc(t.reset)}</button>
         ${count}
       </div>` : `<div class="sr-only">${count}</div>`;
-    const panel = !S.panel ? '' : `<div class="panel" id="panel">
-        <fieldset><legend>${esc(t.fEquipment)}</legend><div class="opts">${D.EQUIPMENT_KEYS.map(k => `<button type="button" class="pill" data-act="equip" data-v="${k}" aria-pressed="${S.equipment.has(k)}">${esc(L().equipment[k])}</button>`).join('')}</div></fieldset>
+    const fields = `        <fieldset><legend>${esc(t.fEquipment)}</legend><div class="opts">${D.EQUIPMENT_KEYS.map(k => `<button type="button" class="pill" data-act="equip" data-v="${k}" aria-pressed="${S.equipment.has(k)}">${esc(L().equipment[k])}</button>`).join('')}</div></fieldset>
         <fieldset><legend>${esc(t.fLevel)}</legend><div class="opts">${[1, 2, 3].map(k => `<button type="button" class="pill" data-act="level" data-v="${k}" aria-pressed="${S.levels.has(k)}">${levelHTML(k)}</button>`).join('')}</div>
           <label class="switch"><input type="checkbox" id="only3d" data-act="only3d" ${S.only3d ? 'checked' : ''}>${esc(t.only3d)}</label></fieldset>
-        <fieldset><legend>${esc(t.fMuscles)}</legend><div class="opts">${D.MUSCLE_KEYS.map(k => `<button type="button" class="pill muscle" data-act="muscle" data-v="${k}" aria-pressed="${S.muscles.has(k)}">${esc(mName(k))}</button>`).join('')}</div></fieldset>
-      </div>`;
+        <fieldset><legend>${esc(t.fMuscles)}</legend><div class="opts">${D.MUSCLE_KEYS.map(k => `<button type="button" class="pill muscle" data-act="muscle" data-v="${k}" aria-pressed="${S.muscles.has(k)}">${esc(mName(k))}</button>`).join('')}</div></fieldset>`;
+    // телефон: фильтры во всплывающем окне снизу; компьютер — панелью под строкой групп
+    const sheet = S.panel && narrowMQ.matches;
+    const panel = !S.panel || sheet ? '' : `<div class="panel" id="panel">${fields}</div>`;
     document.getElementById('tb-filter').innerHTML = filterBtn;
     const tabsEl = document.getElementById('tb-tabs'), keep = tabsEl.scrollLeft;
     tabsEl.innerHTML = groupTabs;
     tabsEl.scrollLeft = keep;
     document.getElementById('toolbar').innerHTML = row + panel;
+    renderSheet(sheet, fields, list.length);
     syncArrows(); syncStuck();
 
     const res = document.getElementById('results');
