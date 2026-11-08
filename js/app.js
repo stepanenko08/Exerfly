@@ -267,7 +267,7 @@
     if (!bar) return;
     const top = parseFloat(getComputedStyle(bar).top) || 0;
     const stuck = getComputedStyle(bar).position === 'sticky' && bar.getBoundingClientRect().top <= top + 0.5 && window.scrollY > 0;
-    const narrow = narrowMQ.matches, collapsed = narrow && stuck && tbCollapsed();
+    const narrow = narrowMQ.matches, collapsed = narrow && stuck && tbCollapsed() && !S.panel;   // открытые фильтры не прячем
     bar.classList.toggle('stuck', stuck);
     bar.classList.toggle('collapsed', collapsed);
     const btn = document.getElementById('tb-toggle'), t = T();
