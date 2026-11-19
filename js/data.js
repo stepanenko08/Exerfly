@@ -57,7 +57,8 @@ EXERFLY.EXERCISES = [
     muscles: { primary: ['lats'], secondary: ['biceps', 'traps', 'shoulders', 'forearms', 'abs'] },
     model: { target: '0m 1.2m 0m', orbit: '35deg 82deg 7.4m', max: '10m', variants: [{ anim: 'pullup', label: 'overhand' }] } },
   { id: 'lat-pulldown', group: 'back', level: 1, equipment: ['cable', 'machine'], sets: '3–4', reps: '10–12', rest: 90,
-    muscles: { primary: ['lats'], secondary: ['biceps', 'traps', 'shoulders', 'forearms'] } },
+    muscles: { primary: ['lats'], secondary: ['biceps', 'traps', 'shoulders', 'forearms'] },
+    model: { target: '0m 1.15m 0.25m', orbit: '55deg 80deg 5.7m', max: '9m', variants: [{ anim: 'lat_pulldown', label: 'classic' }] } },
   { id: 'barbell-row', group: 'back', level: 2, equipment: ['barbell'], sets: '3–4', reps: '8–10', rest: 120,
     muscles: { primary: ['lats', 'traps'], secondary: ['shoulders', 'biceps', 'lower_back', 'forearms'] },
     model: { target: '0m 0.75m -0.1m', orbit: '45deg 78deg 4.2m', max: '7m', variants: [{ anim: 'barbell_row', label: 'classic' }] } },
@@ -81,7 +82,8 @@ EXERFLY.EXERCISES = [
     muscles: { primary: ['chest'], secondary: ['shoulders'] },
     model: { target: '0m 0.6m -0.2m', orbit: '60deg 70deg 4.2m', max: '7m', variants: [{ anim: 'dumbbell_fly', label: 'classic' }] } },
   { id: 'dips', group: 'chest', level: 2, equipment: ['dips'], sets: '3', reps: '8–12', rest: 90,
-    muscles: { primary: ['chest', 'triceps'], secondary: ['shoulders'] } },
+    muscles: { primary: ['chest', 'triceps'], secondary: ['shoulders'] },
+    model: { target: '0m 1.05m 0.1m', orbit: '40deg 80deg 4.8m', max: '8m', variants: [{ anim: 'dips', label: 'classic' }] } },
 
   /* ---------- плечи ---------- */
   { id: 'overhead-press', group: 'shoulders', level: 2, equipment: ['barbell'], sets: '4', reps: '6–10', rest: 120,
@@ -91,7 +93,8 @@ EXERFLY.EXERCISES = [
     muscles: { primary: ['shoulders'], secondary: ['traps'] },
     model: { target: '0m 1m 0m', orbit: '20deg 80deg 4.4m', max: '7m', variants: [{ anim: 'lateral_raise', label: 'classic' }] } },
   { id: 'face-pull', group: 'shoulders', level: 1, equipment: ['cable'], sets: '3', reps: '15', rest: 60,
-    muscles: { primary: ['shoulders', 'traps'], secondary: [] } },
+    muscles: { primary: ['shoulders', 'traps'], secondary: [] },
+    model: { target: '0m 1.1m 0.5m', orbit: '50deg 80deg 5.6m', max: '9m', variants: [{ anim: 'face_pull', label: 'classic' }] } },
 
   /* ---------- руки ---------- */
   { id: 'barbell-curl', group: 'arms', level: 1, equipment: ['barbell'], sets: '3', reps: '10–12', rest: 60,
@@ -104,7 +107,8 @@ EXERFLY.EXERCISES = [
     muscles: { primary: ['triceps'], secondary: [] },
     model: { target: '0m 0.7m -0.2m', orbit: '80deg 75deg 4.2m', max: '7m', variants: [{ anim: 'skull_crusher', label: 'classic' }] } },
   { id: 'triceps-pushdown', group: 'arms', level: 1, equipment: ['cable'], sets: '3', reps: '12–15', rest: 60,
-    muscles: { primary: ['triceps'], secondary: [] } },
+    muscles: { primary: ['triceps'], secondary: [] },
+    model: { target: '0m 1.1m 0.3m', orbit: '40deg 80deg 5.3m', max: '9m', variants: [{ anim: 'triceps_pushdown', label: 'classic' }] } },
 
   { id: 'dumbbell-curl', group: 'arms', level: 1, equipment: ['dumbbells'], sets: '3', reps: '10–12', repsType: 'perSide', rest: 60,
     muscles: { primary: ['biceps'], secondary: ['forearms'] },
@@ -118,7 +122,8 @@ EXERFLY.EXERCISES = [
     muscles: { primary: ['abs'], secondary: ['obliques'] },
     model: { phone: 1.9, target: '0m 0.25m -0.35m', orbit: '70deg 65deg 3.6m', max: '7m', variants: [{ anim: 'crunch', label: 'classic' }] } },
   { id: 'hanging-leg-raise', group: 'core', level: 3, equipment: ['bar'], sets: '3', reps: '8–12', rest: 90,
-    muscles: { primary: ['abs'], secondary: ['obliques', 'forearms'] } },
+    muscles: { primary: ['abs'], secondary: ['obliques', 'forearms'] },
+    model: { target: '0m 1.3m 0.2m', orbit: '50deg 82deg 5.6m', max: '9m', variants: [{ anim: 'hanging_leg_raise', label: 'classic' }] } },
   { id: 'bicycle-crunch', group: 'core', level: 1, equipment: ['bodyweight'], sets: '3', reps: '15–20', repsType: 'perSide', rest: 45,
     muscles: { primary: ['abs', 'obliques'], secondary: [] },
     model: { phone: 1.95, target: '0m 0.3m 0m', orbit: '65deg 70deg 3.6m', max: '7m', variants: [{ anim: 'bicycle_crunch', label: 'classic' }] } },

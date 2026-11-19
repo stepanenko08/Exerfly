@@ -5,7 +5,7 @@ def mid_shoulder_rel(P):
     """Середина плечевых суставов относительно таза для данного наклона корпуса."""
     Q = {k: v for k, v in P.items() if not k.startswith(('hand', 'grip'))}
     Q['hips'] = np.zeros(3); Q.setdefault('footL', (0.12, 0.0)); Q.setdefault('footR', (-0.12, 0.0))
-    c, _ = solve(Q); W = rig.world(c, 0)
+    n = len(WARN); c, _ = solve(Q); W = rig.world(c, 0); del WARN[n:]
     return (W('LeftArm')[:3, 3]+W('RightArm')[:3, 3])/2
 
 FIST_D = np.linalg.norm(np.mean([RP['LeftHand'+g] for g in GRIP], 0)-RP['LeftHand'])
@@ -274,7 +274,8 @@ def hang_grip(P, half, side):
     return np.array([sg*half, S[1]-dy, S[2]])
 
 def body_W(P):
-    c, _ = solve({k: v for k, v in P.items() if not k.startswith(('hand', 'grip'))}); return rig.world(c, 0)
+    n = len(WARN); c, _ = solve({k: v for k, v in P.items() if not k.startswith(('hand', 'grip'))}); del WARN[n:]
+    return rig.world(c, 0)
 def clear_bar(P, bar, side_legs=('Left', 'Right'), clr=0.085):
     """Сдвигает гриф вперёд (по +Z), пока он не отойдёт от бёдер/колен на clr (в плоскости YZ)."""
     W = body_W(P); yz = lambda v: np.array([v[1], v[2]])
@@ -576,3 +577,225 @@ def ht_fn(P):
 _b0 = ht_fn(dict(s=0.0))['_bar']; print('  hip thrust bar bottom y %.3f (plates %.3f)' % (_b0[1], _b0[1]-PLATE_R))
 animate('hip_thrust', [(0, dict(s=0)), (0.3, dict(s=0)), (1.1, dict(s=1)), (1.5, dict(s=1)), (2.6, dict(s=0))],
         props_fn=lambda c, N: [(FB_HT, 'show', None)]+bar_track(c, N), grip=True, fn=ht_fn)
+
+# ================= партия 4: блочная стойка, брусья, турник =================
+M_IRON2 = mat('Stack iron', (0.03, 0.03, 0.034), 0.5, 0.5)
+M_CABLE = mat('Cable', (0.02, 0.02, 0.022), 0.3, 0.5)
+def dyn_cyl(name, r, m, seg=10):
+    """Цилиндр вдоль X от 0 до 1: анимируется положением начала, поворотом и длиной (scale.x)."""
+    g = Geo(); g.cyl([0.5, 0, 0], [1, 0, 0], r, 1.0, seg=seg)
+    return add_node(name, add_mesh([(m, g)]))
+def stretch(node, A, B):
+    t, r, sc = [], [], []
+    for a, b in zip(A, B):
+        d = np.asarray(b)-np.asarray(a); L = max(np.linalg.norm(d), 1e-4)
+        t.append(np.asarray(a, float)); r.append(look(d, (0, 0, 1) if abs(d[1]) > 0.9*L else (0, 1, 0))); sc.append([L, 1, 1])
+    return [(node, 'translation', t), (node, 'rotation', fix_sign(r)), (node, 'scale', sc)]
+
+def cable_tower(name, ZT, PY, seat=None):
+    """Блочная стойка: центр на z=ZT, блок на высоте PY смотрит к персонажу (к -Z)."""
+    fr, acc, rub, st, pad, chr_ = Geo(), Geo(), Geo(), Geo(), Geo(), Geo()
+    H = 2.32; zf = ZT-0.20                                              # передняя колонна с кареткой
+    rbox(fr, [0, 0.03, ZT], (0.76, 0.06, 0.62), 0.01, n=3)
+    for sg in (-1, 1):
+        rtube(fr, [sg*0.30, 0.06, ZT+0.14], [sg*0.30, H, ZT+0.14], 0.07, 0.07, up=(0, 0, 1))
+        tube(chr_, [sg*0.09, 0.12, ZT+0.10], [sg*0.09, 1.25, ZT+0.10], 0.007)         # направляющие стека
+    rtube(fr, [-0.34, H, ZT+0.14], [0.34, H, ZT+0.14], 0.08, 0.08, up=(0, 1, 0))
+    rtube(fr, [0, H, ZT+0.14], [0, H, zf], 0.07, 0.07)
+    rtube(fr, [0, 0.06, zf], [0, H, zf], 0.07, 0.07, up=(0, 0, 1))
+    for i in range(14): rbox(acc, [0, 0.35+i*0.13, zf-0.036], (0.03, 0.012, 0.004), 0.001, n=2)   # отметки высоты
+    rbox(fr, [0, PY+0.07, zf-0.035], (0.13, 0.20, 0.07), 0.015)                      # каретка
+    rub.cyl([0, PY, zf-0.12], [1, 0, 0], 0.055, 0.035, seg=28)                       # ролик
+    rbox(fr, [0, PY, zf-0.095], (0.06, 0.06, 0.08), 0.01)
+    for i in range(5): rbox(st, [0, 0.13+i*0.062+0.028, ZT+0.10], (0.30, 0.056, 0.12), 0.008, n=3)
+    rbox(rub, [0, 0.07, ZT+0.10], (0.30, 0.03, 0.12), 0.01, n=2)
+    tube(chr_, [0, 0.62, ZT+0.10], [0, H-0.03, ZT+0.10], 0.005)
+    groups = [(M_STEEL, fr), (M_ACCENT, acc), (M_RUBBER, rub), (M_IRON2, st), (mid['Chrome'], chr_)]
+    if seat is not None:
+        sz, sy, kz, ky = seat
+        rtube(fr, [0, 0.05, ZT-0.25], [0, 0.05, sz-0.05], 0.07, 0.05)
+        rtube(fr, [0, 0.05, sz], [0, sy-0.07, sz], 0.07, 0.07, up=(0, 0, 1))
+        rbox(pad, [0, sy-0.035, sz], (0.36, 0.07, 0.38), 0.03)
+        tube(fr, [-0.32, 0.03, sz], [0.32, 0.03, sz], 0.03)
+        rtube(fr, [0, sy-0.07, sz+0.06], [0, ky, kz], 0.06, 0.05, up=(0, 0, 1))
+        for sg in (-1, 1): pad.cyl([sg*0.13, ky, kz], [1, 0, 0], 0.055, 0.20, seg=24)
+        tube(fr, [-0.03, ky, kz], [0.03, ky, kz], 0.03)
+        groups.append((M_PAD, pad))
+    node = add_node(name, add_mesh(groups))
+    top = Geo()
+    for i in range(3): rbox(top, [0, i*0.062, 0], (0.30, 0.056, 0.12), 0.008, n=3)
+    top.cyl([0, 0.0, -0.065], [0, 0, 1], 0.012, 0.03)                          # штифт под рабочим весом
+    stack = add_node(name+'Stack', add_mesh([(M_IRON2, top)]), (0, 0, 0))
+    return dict(node=node, stack=stack, pulley=np.array([0, PY-0.055, zf-0.12]), stack0=np.array([0, 0.13+5*0.062+0.028, ZT+0.10]))
+CABLE = dyn_cyl('Cable', 0.0055, M_CABLE)
+def cable_props(T, ends):
+    """Трос от ролика к рукояти + подъём верхней плиты стека на величину вытянутого троса."""
+    P0 = [T['pulley']]*len(ends); L = np.array([np.linalg.norm(e-T['pulley']) for e in ends])
+    lift = L-L.min()+0.02
+    st = [T['stack0']+np.array([0, l, 0]) for l in lift]
+    return [(T['node'], 'show', None), (T['stack'], 'show', None), (T['stack'], 'translation', st)]+stretch(CABLE, P0, ends)
+
+def handle_bar(name, half, bend=0.0):
+    g, gr = Geo(), Geo()
+    g.cyl([0, 0, 0], [1, 0, 0], 0.013, 2*half-(0.16 if bend else 0))
+    if bend:
+        for sg in (-1, 1):
+            a = np.array([sg*(half-0.08), 0, 0]); b = a+np.array([sg*0.14, -0.06, 0])
+            g.cyl((a+b)/2, b-a, 0.013, np.linalg.norm(b-a))
+    for sg in (-1, 1): gr.cyl([sg*(half-0.12 if bend else half*0.65), 0, 0], [1, 0, 0], 0.017, 0.12 if bend else half*0.6)
+    g.cyl([0, 0.025, 0], [0, 1, 0], 0.012, 0.05); g.cyl([0, 0.055, 0], [0, 0, 1], 0.018, 0.012)
+    return add_node(name, add_mesh([(mid['Chrome'], g), (M_RUBBER, gr)]))
+def bar_handle_props(node, clip, N, T, up_off=0.0):
+    G = grips(clip, N); t, r, ends = [], [], []
+    for g in G:
+        c = (g['gl']+g['gr'])/2; d = nz(g['gl']-g['gr'])
+        toward = nz(T['pulley']-c); upv = toward-np.dot(toward, d)*d
+        t.append(c); r.append(look(d, upv)); ends.append(c+nz(upv)*0.06)
+    return [(node, 'show', None), (node, 'translation', t), (node, 'rotation', fix_sign(r))]+cable_props(T, ends)
+
+# ---------------- разгибания на блоке (трицепс) ----------------
+TPD = cable_tower('CableTowerTPD', 0.78, 2.05)
+PDBAR = handle_bar('PushdownBar', 0.25)
+def pushdown_fn(P):
+    s = P['s']                                                       # 0 — предплечья вверх, 1 — руки выпрямлены
+    b = np.sin(np.pi*s)                                              # корпус чуть «дожимает» вес и пружинит
+    P.update(footL=(0.19, 0.04), footR=(-0.19, 0.04), toe=12, kneeout=5, hips=(0, RP['Hips'][1]-0.03-0.012*s, -0.02-0.02*s),
+             pelvis=(8+5*s, 0, 0), spine=(4+4*s+1.5*b, 0, 0), neck=-10-5*s, head=-2)
+    phi = 92-84*s
+    for k in 'LR':
+        curl_arm(P, k, phi, 0.115)
+        P['axis'+k] = np.array([1.0, 0, 0]); P['palm'+k] = nz(np.array([0, -np.sin(np.radians(phi)), -np.cos(np.radians(phi))]))
+        P['wrist'+k] = 8*(1-s)
+    return P
+animate('triceps_pushdown', [(0, dict(s=0)), (0.3, dict(s=0)), (1.0, dict(s=1)), (1.25, dict(s=1)), (2.25, dict(s=0))],
+        props_fn=lambda c, N: bar_handle_props(PDBAR, c, N, TPD), fn=pushdown_fn)
+
+# ---------------- тяга каната к лицу ----------------
+FPT = cable_tower('CableTowerFP', 1.30, 1.62)
+ROPE = [dyn_cyl('RopeL', 0.014, M_RUBBER, 12), dyn_cyl('RopeR', 0.014, M_RUBBER, 12)]
+def facepull_fn(P):
+    s = P['s']
+    P.update(footL=(0.16, 0.10), footR=(-0.16, -0.02), toe=10, kneeout=4, hips=(0, RP['Hips'][1]-0.03, -0.03-0.015*s),
+             pelvis=(-3-2*s, 0, 0), spine=(-2-3*s, 0, 0), neck=3*s, head=0, clav=(4*s, 4*s))
+    W = body_W(P); Sm = (W('LeftArm')[:3, 3]+W('RightArm')[:3, 3])/2
+    for k, sg in (('L', 1), ('R', -1)):
+        a = Sm+np.array([sg*0.07, 0.03, REACH*0.93]); b = Sm+np.array([sg*0.20, 0.15, 0.22])
+        P['grip'+k] = a+(b-a)*s+np.array([sg*0.05, 0.05, 0])*np.sin(np.pi*s)
+        P['elbow'+k] = nz(lerp((sg*0.7, -0.7, -0.2), (sg*1.0, 0.1, -0.15), s))
+        P['axis'+k] = np.array([0, 1.0, 0]); P['palm'+k] = np.array([-sg*1.0, 0, 0.3])
+    return P
+def facepull_props(clip, N):
+    G = grips(clip, N); J, ends = [], {'l': [], 'r': []}
+    for g in G:
+        c = (g['gl']+g['gr'])/2; j = c+nz(FPT['pulley']-c)*0.16; J.append(j)
+        for sd in 'lr': ends[sd].append(g['g'+sd]-np.array([0, 0.05, 0]))
+    return cable_props(FPT, J)+stretch(ROPE[0], J, ends['l'])+stretch(ROPE[1], J, ends['r'])
+animate('face_pull', [(0, dict(s=0)), (0.4, dict(s=0)), (1.5, dict(s=1)), (1.85, dict(s=1)), (3.2, dict(s=0))],
+        props_fn=facepull_props, grip=True, fn=facepull_fn)
+
+# ---------------- тяга верхнего блока ----------------
+LP_SEAT = 0.48; LP_SZ = 0.0
+LP_BASE = dict(hips=(0, LP_SEAT+0.13, LP_SZ-0.06), footL=(0.20, 0.47), footR=(-0.20, 0.47), toe=12, kneeout=8)
+def lp_body(s):
+    lean = 12+12*np.sin(np.pi/2*min(1, s*1.4))
+    return dict(LP_BASE, pelvis=(-lean*0.7, 0, 0), spine=(-lean*0.3-2*s, 0, 0), neck=lean*0.75, head=-3*s, clav=(10*(1-s), 10*(1-s)))
+_W = body_W(lp_body(0)); _kn = (_W('LeftLeg')[:3, 3]+_W('RightLeg')[:3, 3])/2
+LPT = cable_tower('CableTowerLP', 0.62, 2.33, seat=(LP_SZ, LP_SEAT, _kn[2]-0.07, _kn[1]+0.12))
+LPBAR = handle_bar('LatBar', 0.58, bend=1)
+def lp_fn(P):
+    s = P['s']; P.update(lp_body(s))
+    W = body_W(P); Sm = (W('LeftArm')[:3, 3]+W('RightArm')[:3, 3])/2
+    H = W('Hips')[:3, 3]; U_ = nz(W('Spine2')[:3, 3]-H); F_ = nz(np.cross([1, 0, 0], U_))
+    for k, sg in (('L', 1), ('R', -1)):
+        S = W(('Left' if k == 'L' else 'Right')+'Arm')[:3, 3]; dx = 0.40-abs(S[0])
+        top = np.array([sg*0.40, S[1]+np.sqrt((REACH*0.975)**2-dx**2-0.17**2), S[2]+0.17])
+        bot = Sm+F_*0.21-U_*0.05+np.array([sg*0.40, 0, 0])
+        P['grip'+k] = top+(bot-top)*s
+        P['elbow'+k] = nz(lerp((sg*1.0, -0.2, -0.2), (sg*0.6, -1.0, -0.4), s))
+        P['axis'+k] = np.array([1.0, 0, 0]); P['palm'+k] = nz(np.array([0, 0.3, 1.0]))
+    return P
+animate('lat_pulldown', [(0, dict(s=0)), (0.35, dict(s=0)), (1.15, dict(s=1)), (1.4, dict(s=1)), (2.5, dict(s=0))],
+        props_fn=lambda c, N: bar_handle_props(LPBAR, c, N, LPT), grip=True, fn=lp_fn)
+
+# ---------------- отжимания на брусьях ----------------
+DIP_Y = 1.24; DIP_X = 0.30; DIP_Z = 0.10
+def dip_station():
+    fr, acc, rub, gr = Geo(), Geo(), Geo(), Geo()
+    for sg in (-1, 1):
+        x = sg*DIP_X
+        tube(fr, [x, DIP_Y, DIP_Z-0.32], [x, DIP_Y, DIP_Z+0.30], 0.02)                    # перекладина
+        gr.cyl([x, DIP_Y, DIP_Z+0.0], [0, 0, 1], 0.024, 0.30, seg=24)                     # прорезиненный хват
+        for z in (DIP_Z-0.30, DIP_Z+0.28):
+            rtube(fr, [x+sg*0.02, 0.05, z], [x+sg*0.02, DIP_Y-0.02, z], 0.055, 0.055, up=(0, 0, 1))
+        rtube(fr, [x+sg*0.02, 0.04, DIP_Z-0.55], [x+sg*0.02, 0.04, DIP_Z+0.50], 0.07, 0.06)  # опора
+        for z in (DIP_Z-0.55, DIP_Z+0.50): rbox(rub, [x+sg*0.02, 0.012, z], (0.08, 0.024, 0.06), 0.01, n=2)
+        rbox(acc, [x+sg*0.05, 0.75, DIP_Z+0.28], (0.004, 0.25, 0.04), 0.002, n=2)
+    rtube(fr, [-DIP_X-0.02, 0.35, DIP_Z-0.30], [DIP_X+0.02, 0.35, DIP_Z-0.30], 0.05, 0.05, up=(0, 1, 0))
+    rtube(fr, [-DIP_X-0.02, 0.04, DIP_Z-0.30], [DIP_X+0.02, 0.04, DIP_Z-0.30], 0.05, 0.05, up=(0, 1, 0))
+    return add_node('DipStation', add_mesh([(M_STEEL, fr), (M_ACCENT, acc), (M_RUBBER, rub), (M_RUBBER, gr)]))
+DIPS = dip_station()
+def legs_tucked(P, bend=1.0):
+    """Голени скрещены сзади: бедро чуть вперёд, колени согнуты ~90°."""
+    W = body_W(P); a = np.radians(28*bend)
+    for k, sd, sg in (('L', 'Left', 1), ('R', 'Right', -1)):
+        hj = W(sd+'UpLeg')[:3, 3]; Lm = LIMB[(sd, 'leg')]
+        dth = W('Hips')[:3, :3]@np.array([0, 0, 1.0]); dth = nz(np.array([0, -1, 0])+nz(dth)*np.tan(np.radians(14)))
+        kn = hj+Lm['la']*nz(dth+np.array([sg*0.02, 0, 0]))
+        ank = kn+Lm['lb']*nz(np.array([sg*0.03, -np.cos(a), -np.sin(a)*1.6]))
+        P['foot'+k] = foot_on_bench(ank, 55, sd, 4)
+        P['knee'+k] = np.array([0, 0.0, 1.0])
+    return P
+RT_DIP = 12                                                      # плечи раскрыты, лопатки сведены
+def dip_fn(P):
+    s = P['s']                                                    # 0 — руки прямые, 1 — внизу
+    P.update(pelvis=(8+24*s, 0, 0), spine=(4+8*s, 0, 0), neck=-10-16*s, head=-4, clav=(-3, -3), retract=RT_DIP*s, toe=4,
+             footL=(0.1, 0), footR=(-0.1, 0), hips=(0, 0, 0))
+    rel = mid_shoulder_rel(P)
+    hand_y = DIP_Y+0.01
+    top = np.array([0, hand_y+np.sqrt((REACH*0.975)**2-(DIP_X-0.19)**2), DIP_Z+0.0])
+    bot = np.array([0, hand_y+LIMB[('Left', 'arm')]['lb']*0.95+LIMB[('Left', 'arm')]['la']*0.22, DIP_Z+0.09])   # плечо ≈ параллельно полу, локоть ~90°
+    P['hips'] = top+(bot-top)*s-rel
+    P = legs_tucked(P)
+    for k, sg in (('L', 1), ('R', -1)):
+        P['grip'+k] = np.array([sg*DIP_X, hand_y, DIP_Z+0.0])
+        P['elbow'+k] = np.array([sg*0.5, -0.1, -1.0]); P['axis'+k] = np.array([0, 0, 1.0]); P['palm'+k] = np.array([-sg*1.0, -0.5, 0])
+    return P
+animate('dips', [(0, dict(s=0)), (0.35, dict(s=0)), (1.4, dict(s=1)), (1.6, dict(s=1)), (2.5, dict(s=0))],
+        props_fn=lambda c, N: [(DIPS, 'show', None)], grip=True, fn=dip_fn)
+
+# ---------------- подъём ног в висе ----------------
+HB_Y = 2.32
+def pull_frame():
+    fr, rub, acc, gr = Geo(), Geo(), Geo(), Geo()
+    tube(fr, [-0.62, HB_Y, 0], [0.62, HB_Y, 0], 0.016)
+    for sg in (-1, 1):
+        gr.cyl([sg*0.24, HB_Y, 0], [1, 0, 0], 0.02, 0.16, seg=24)
+        rtube(fr, [sg*0.66, 0.05, -0.05], [sg*0.66, HB_Y+0.06, -0.05], 0.07, 0.07, up=(0, 0, 1))
+        rtube(fr, [sg*0.66, HB_Y, -0.05], [sg*0.60, HB_Y, 0.0], 0.05, 0.05)
+        rtube(fr, [sg*0.66, 0.04, -0.65], [sg*0.66, 0.04, 0.55], 0.08, 0.06)
+        for z in (-0.65, 0.55): rbox(rub, [sg*0.66, 0.012, z], (0.09, 0.024, 0.06), 0.01, n=2)
+        rtube(fr, [sg*0.66, 0.05, -0.55], [sg*0.66, 1.0, -0.05], 0.05, 0.05, up=(1, 0, 0))
+        rbox(acc, [sg*0.66, 1.6, 0.0-0.012], (0.04, 0.3, 0.004), 0.002, n=2)
+    rtube(fr, [-0.66, HB_Y+0.06, -0.05], [0.66, HB_Y+0.06, -0.05], 0.06, 0.06, up=(0, 1, 0))
+    return add_node('PullFrame', add_mesh([(M_STEEL, fr), (M_RUBBER, rub), (M_ACCENT, acc), (M_RUBBER, gr)]))
+PFRAME = pull_frame()
+def hlr_fn(P):
+    s = P['s']; al = 95*s                                         # угол подъёма ног
+    P.update(pelvis=(-0.30*al, 0, 0), spine=(0.20*al, 0, 0), neck=-4+0.14*al, head=0, clav=(14, 14), toe=4,
+             footL=(0.1, 0), footR=(-0.1, 0), hips=(0, 0, 0))
+    rel = mid_shoulder_rel(P)
+    dy = np.sqrt((REACH*0.975)**2-(0.24-0.19)**2)
+    P['hips'] = np.array([0, HB_Y-dy, -0.04*np.sin(np.pi/2*s)])-rel
+    W = body_W(P)
+    for k, sd, sg in (('L', 'Left', 1), ('R', 'Right', -1)):
+        hj = W(sd+'UpLeg')[:3, 3]; Lm = LIMB[(sd, 'leg')]; a = np.radians(al)
+        a_ = np.radians(92*s)                                         # угол ног относительно вертикали (в мире)
+        d = np.array([-sg*0.015, -np.cos(a_), np.sin(a_)])
+        bend = 0.985-0.02*np.sin(np.pi*s)                               # колени чуть мягче в середине подъёма
+        P['foot'+k] = foot_on_bench(hj+d*(Lm['la']+Lm['lb'])*bend, 30-np.degrees(a_), sd, 4)
+        P['knee'+k] = np.array([0, np.sin(a_), np.cos(a_)])
+        P['grip'+k] = np.array([sg*0.24, HB_Y, 0.0])
+        P['elbow'+k] = np.array([sg*1.0, 0, -0.3]); P['axis'+k] = np.array([1.0, 0, 0]); P['palm'+k] = np.array([0, 0.2, 1.0])
+    return P
+animate('hanging_leg_raise', [(0, dict(s=0)), (0.35, dict(s=0)), (1.25, dict(s=1)), (1.5, dict(s=1)), (2.6, dict(s=0))],
+        props_fn=lambda c, N: [(PFRAME, 'show', None)], grip=True, fn=hlr_fn)

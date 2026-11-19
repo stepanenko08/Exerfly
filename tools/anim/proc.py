@@ -71,7 +71,8 @@ def solve(P):
     D['Hips'] = Rp; D['Spine'] = Rp@Rs; D['Spine1'] = D['Spine']@Rs; D['Spine2'] = D['Spine1']@Rs
     D['Neck'] = D['Spine2']@Rx(P.get('neck', 0)); D['Head'] = D['Neck']@Rx(P.get('head', 0))
     cl = P.get('clav', (0, 0))
-    D['LeftShoulder'] = D['Spine2']@Rz(cl[0]); D['RightShoulder'] = D['Spine2']@Rz(-cl[1])
+    rt = P.get('retract', 0)                                       # сведение лопаток (плечи назад)
+    D['LeftShoulder'] = D['Spine2']@Ry(rt)@Rz(cl[0]); D['RightShoulder'] = D['Spine2']@Ry(-rt)@Rz(-cl[1])
     hips = np.asarray(P['hips'], float)
     # ноги: положение подушечки стопы, подъём пятки, разворот носка
     for sd in ('Left', 'Right'):
