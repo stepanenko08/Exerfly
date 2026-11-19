@@ -799,3 +799,159 @@ def hlr_fn(P):
     return P
 animate('hanging_leg_raise', [(0, dict(s=0)), (0.35, dict(s=0)), (1.25, dict(s=1)), (1.5, dict(s=1)), (2.6, dict(s=0))],
         props_fn=lambda c, N: [(PFRAME, 'show', None)], grip=True, fn=hlr_fn)
+
+# ================= партия 5: жим ногами, подъёмы на носки, гиперэкстензия =================
+def heel_ball(ball, heel, side, yaw):
+    """Голеностоп для стопы с подушечкой в точке ball и наклоном heel."""
+    Df = Ry(yaw*(1 if side == 'Left' else -1))@Rx(heel)
+    return ball-Df@(RP[side+'ToeBase']-RP[side+'Foot'])
+
+# ---------------- подъёмы на носки (на степ-платформе) ----------------
+STEP_H = 0.15; CR_BZ = 0.05
+def calf_step():
+    g, rub, acc = Geo(), Geo(), Geo()
+    rbox(g, [0, STEP_H/2+0.01, CR_BZ+0.11], (0.86, STEP_H-0.02, 0.34), 0.03)
+    rbox(rub, [0, STEP_H-0.002, CR_BZ+0.11], (0.80, 0.008, 0.30), 0.004, n=3)
+    for sg in (-1, 1):
+        rbox(acc, [sg*0.43, STEP_H*0.55, CR_BZ+0.11], (0.006, 0.03, 0.30), 0.002, n=2)
+        rbox(rub, [sg*0.36, 0.01, CR_BZ+0.11], (0.10, 0.02, 0.30), 0.006, n=2)
+    return add_node('Step', add_mesh([(M_PAD, g), (M_RUBBER, rub), (M_ACCENT, acc)]))
+STEP = calf_step()
+_ank0 = heel_ball(np.array([0.11, BALL_Y, 0.0]), 0, 'Left', 10)
+def calf_fn(P):
+    s = P['s']; heel = -14+44*s                                   # пятки ниже края → высоко на носках
+    P.update(toe=10, kneeout=2, pelvis=(1, 0, 0), spine=(0, 0, 0), neck=-1, head=0)
+    for k, sd, sg in (('L', 'Left', 1), ('R', 'Right', -1)):
+        ball = np.array([sg*0.11, BALL_Y+STEP_H, CR_BZ]); P['foot'+k] = (ball[0], ball[2], heel, STEP_H)
+    ank = heel_ball(np.array([0.11, BALL_Y+STEP_H, CR_BZ]), heel, 'Left', 10)
+    P['hips'] = (0, RP['Hips'][1]-0.006+(ank[1]-_ank0[1]), ank[2]-_ank0[2]-0.01)
+    P['swing'] = 0
+    return arms_relaxed(P)                                        # руки свободно вдоль тела
+animate('calf_raise', [(0, dict(s=0.3)), (0.25, dict(s=0)), (0.55, dict(s=0)), (1.2, dict(s=1)), (1.6, dict(s=1)), (2.2, dict(s=0.3))],
+        props_fn=lambda c, N: [(STEP, 'show', None)], hand=RELAX, grip=True, fn=calf_fn)
+
+# ---------------- жим ногами (платформа под 45°) ----------------
+LP_R = nz(np.array([0, 1.0, 1.0]))                                # направление салазок
+LP_N = nz(np.array([0, 1.0, -1.0]))                               # «вверх» по платформе
+LP_BA = 42                                                        # спинка, градусов от пола
+LP_BASE2 = dict(hips=(0, 0.47, 0.0), pelvis=(-(90-LP_BA)*0.85, 0, 0), spine=(-(90-LP_BA)*0.15, 0, 0), neck=24, head=8, toe=12)
+_W = body_W({**LP_BASE2, 'footL': (0.15, 0.6), 'footR': (-0.15, 0.6)})
+LPH = (_W('LeftUpLeg')[:3, 3]+_W('RightUpLeg')[:3, 3])/2
+_LL = LIMB[('Left', 'leg')]['la']+LIMB[('Left', 'leg')]['lb']
+LPU = nz(_W('Spine2')[:3, 3]-_W('Hips')[:3, 3]); LPB = nz(np.cross(LPU, [1, 0, 0]))   # к спинке
+LP_OFF = LP_N*0.10                                                 # стопы чуть выше линии таза
+def lp_ankles(D):
+    return [LPH+LP_R*D+LP_OFF+np.array([sg*0.17, 0, 0]) for sg in (1, -1)]
+LP_DTOP = np.sqrt(max(0, (_LL*0.965)**2-0.10**2)); LP_DBOT = _LL*0.50
+SOLE = 0.105                                                       # от голеностопа до подошвы
+def leg_press_machine():
+    fr, pad, acc, rub = Geo(), Geo(), Geo(), Geo()
+    H = np.array(LP_BASE2['hips'])
+    rbox(pad, [0, 0.40-0.035, H[2]+0.10], (0.40, 0.07, 0.40), 0.03)
+    Wd = LPU; rbox(pad, H+LPU*0.33+LPB*0.16, (0.42, 0.07, 0.72), 0.03, np.stack([np.array([1., 0, 0]), -LPB, LPU], 1))
+    rtube(fr, [0, 0.05, H[2]-0.70], [0, 0.05, H[2]+1.90], 0.10, 0.08)
+    rtube(fr, [0, 0.05, H[2]+0.10], [0, 0.33, H[2]+0.10], 0.08, 0.08, up=(0, 0, 1))
+    rtube(fr, [0, 0.05, H[2]-0.35], H+LPU*0.33+LPB*0.21, 0.07, 0.06)
+    for sg in (-1, 1):
+        a = LPH+LP_R*0.45+np.array([sg*0.34, 0, 0])-LP_N*0.25; b = a+LP_R*1.10
+        rtube(fr, a, b, 0.06, 0.08, up=LP_N)
+        rtube(fr, [sg*0.34, 0.05, b[2]], b, 0.06, 0.06, up=(0, 0, 1))
+        rtube(fr, [sg*0.34, 0.05, a[2]], a, 0.06, 0.06, up=(0, 0, 1))
+        tube(fr, [sg*0.30, 0.40, H[2]-0.10], [sg*0.30, 0.40, H[2]+0.16], 0.016); rub.cyl([sg*0.30, 0.40, H[2]+0.04], [0, 0, 1], 0.022, 0.12)
+        rtube(fr, [sg*0.30, 0.40, H[2]-0.10], [sg*0.20, 0.36, H[2]-0.10], 0.03, 0.03)
+        rbox(acc, a+LP_R*0.55+np.array([sg*0.032, 0, 0])-LP_N*0.0, (0.004, 0.05, 0.8), 0.002, np.stack([np.array([1., 0, 0]), LP_N, LP_R], 1), n=2)
+    tube(fr, [-0.36, 0.05, H[2]+1.90], [0.36, 0.05, H[2]+1.90], 0.03)
+    machine = add_node('LegPress', add_mesh([(M_STEEL, fr), (M_PAD, pad), (M_ACCENT, acc), (M_RUBBER, rub)]))
+    # салазки: начало координат — центр поверхности платформы
+    s_fr, s_pl, s_rb = Geo(), Geo(), Geo()
+    Rm = np.stack([np.array([1., 0, 0]), -LP_N, -LP_R], 1)
+    rbox(s_fr, LP_R*0.025, (0.62, 0.58, 0.05), 0.01, Rm)
+    rbox(s_rb, -LP_R*0.002, (0.56, 0.52, 0.006), 0.003, Rm, n=3)
+    for sg in (-1, 1):
+        rtube(s_fr, LP_R*0.05+np.array([sg*0.30, 0, 0])-LP_N*0.20, LP_R*0.05+np.array([sg*0.34, 0, 0])-LP_N*0.25, 0.05, 0.05)
+        rtube(s_fr, LP_R*0.05+np.array([sg*0.34, 0, 0])+LP_N*0.20, LP_R*0.16+np.array([sg*0.34, 0, 0])-LP_N*0.25, 0.06, 0.05)   # ползун на рельсе
+        h0 = np.array([sg*0.40, 0, 0])+LP_R*0.13-LP_N*0.04                   # рог для блинов на каретке
+        s_fr.cyl(h0+np.array([sg*0.12, 0, 0]), [1, 0, 0], 0.025, 0.26)
+        s_fr.cyl(h0+np.array([sg*0.015, 0, 0]), [1, 0, 0], 0.045, 0.03)
+        for i, r_ in enumerate((0.20, 0.20, 0.14)):
+            s_pl.cyl(h0+np.array([sg*(0.055+i*0.048), 0, 0]), [1, 0, 0], r_, 0.044, seg=40)
+    tube(s_fr, LP_R*0.13-LP_N*0.04-np.array([0.40, 0, 0]), LP_R*0.13-LP_N*0.04+np.array([0.40, 0, 0]), 0.03)   # поперечина каретки
+    for sg in (-1, 1): rtube(s_fr, LP_R*0.05+np.array([sg*0.22, 0, 0])-LP_N*0.04, LP_R*0.13+np.array([sg*0.22, 0, 0])-LP_N*0.04, 0.05, 0.05)
+    sled = add_node('LegPressSled', add_mesh([(M_STEEL, s_fr), (M_RUBBER, s_pl), (M_RUBBER, s_rb)]))
+    return machine, sled
+LPM, LPS = leg_press_machine()
+def legpress_fn(P):
+    s = P['s']; D = LP_DTOP+(LP_DBOT-LP_DTOP)*s                    # 0 — ноги почти прямые, 1 — колени ~90°
+    P.update(LP_BASE2); P['neck'] = 24+6*s
+    for (k, sd, sg), A in zip((('L', 'Left', 1), ('R', 'Right', -1)), lp_ankles(D)):
+        Df = Ry(12*sg)@Rx(-135); ball = A+Df@(RP[sd+'ToeBase']-RP[sd+'Foot'])
+        P['foot'+k] = (ball[0], ball[2], -135, ball[1]-BALL_Y); P['toefollow'+k] = True
+        P['knee'+k] = np.array([sg*0.35, 0.7, -0.7])
+        P['grip'+k] = np.array([sg*0.30, 0.40, 0.04]); P['elbow'+k] = np.array([sg*0.6, 0, -1.0])
+        P['axis'+k] = np.array([0, 0, 1.0]); P['palm'+k] = np.array([-sg*1.0, 0, 0])
+    P['_sled'] = LPH+LP_R*(D+SOLE)+LP_OFF
+    return P
+_LPK = [(0, dict(s=0)), (0.35, dict(s=0)), (1.45, dict(s=1)), (1.7, dict(s=1)), (2.6, dict(s=0))]
+def lp_track(clip, N):
+    # положение салазок = по подошвам: середина голеностопов + подошва
+    t = []
+    for f in range(N):
+        W = rig.world(clip, f); A = (W('LeftFoot')[:3, 3]+W('RightFoot')[:3, 3])/2
+        t.append(LPH+LP_R*(np.dot(A-LPH-LP_OFF, LP_R)+SOLE)+LP_OFF)
+    return [(LPM, 'show', None), (LPS, 'show', None), (LPS, 'translation', t)]
+animate('leg_press', _LPK, props_fn=lp_track, grip=True, fn=legpress_fn)
+
+# ---------------- гиперэкстензия (тренажёр 45°) ----------------
+HX_D = nz(np.array([0, 1.0, 1.0]))                                # линия ног
+HX_F = nz(np.array([0, -1.0, 1.0]))                               # перед тела (к полу)
+HX_ANK = np.array([0, 0.27, 0.0])
+HX_LL = LIMB[('Left', 'leg')]['la']+LIMB[('Left', 'leg')]['lb']
+HX_HJ = HX_ANK+HX_D*HX_LL*0.99
+def hyper_machine():
+    fr, pad, acc, rub = Geo(), Geo(), Geo(), Geo()
+    Rm = np.stack([np.array([1., 0, 0]), -HX_F, HX_D], 1)
+    # опора для стоп (перпендикулярно ногам)
+    fp = HX_ANK-HX_D*0.115
+    rbox(rub, fp, (0.46, 0.30, 0.04), 0.01, np.stack([np.array([1., 0, 0]), HX_F, -HX_D], 1)@np.diag([1, 1, 1]))
+    # валики за голенью
+    rl = HX_ANK+HX_D*0.10-HX_F*0.085
+    for sg in (-1, 1): pad.cyl(rl+np.array([sg*0.11, 0, 0]), [1, 0, 0], 0.05, 0.18, seg=24)
+    tube(fr, rl-np.array([0.02, 0, 0]), rl+np.array([0.02, 0, 0]), 0.025)
+    # подушка под бёдрами (ниже тазобедренного сустава)
+    hp = HX_HJ-HX_D*0.16+HX_F*0.135
+    rbox(pad, hp, (0.40, 0.08, 0.26), 0.035, Rm)
+    # рама
+    beam0 = fp-HX_F*0.10-HX_D*0.05; beam1 = hp+HX_F*0.07-HX_D*0.10
+    rtube(fr, beam0, beam1, 0.08, 0.08, up=-HX_F)
+    rtube(fr, rl, beam0+HX_D*0.25, 0.05, 0.05)
+    rtube(fr, [0, 0.05, beam0[2]-0.25], [0, 0.05, hp[2]+0.25], 0.10, 0.08)
+    rtube(fr, [0, 0.05, beam0[2]], beam0, 0.07, 0.07, up=(0, 0, 1))
+    rtube(fr, [0, 0.05, hp[2]+0.05], beam1, 0.07, 0.07, up=(0, 0, 1))
+    for z in (beam0[2]-0.25, hp[2]+0.25):
+        tube(fr, [-0.33, 0.05, z], [0.33, 0.05, z], 0.03)
+        for sg in (-1, 1): rbox(rub, [sg*0.32, 0.015, z], (0.07, 0.03, 0.07), 0.01, n=2)
+    for sg in (-1, 1):
+        a = hp+HX_F*0.02+np.array([sg*0.24, 0, 0])-HX_D*0.05; tube(fr, a, a-HX_F*0.0+np.array([0, 0.18, 0])+HX_D*0.05, 0.016)
+    rbox(acc, (beam0+beam1)/2+np.array([0.042, 0, 0]), (0.004, 0.03, np.linalg.norm(beam1-beam0)*0.7), 0.002,
+         np.stack([np.array([1., 0, 0]), -HX_F, nz(beam1-beam0)], 1), n=2)
+    return add_node('HyperBench', add_mesh([(M_STEEL, fr), (M_PAD, pad), (M_ACCENT, acc), (M_RUBBER, rub)]))
+HYP = hyper_machine()
+def hyper_fn(P):
+    s = P['s']; th = 70*s                                         # 0 — корпус на одной линии с ногами, 1 — наклон вниз
+    P.update(pelvis=(45+th*0.85, 0, 0), spine=(th*0.15, 0, 0), neck=-12+0.1*th, head=-4, toe=8, hips=(0, 0, 0))
+    for k, sd, sg in (('L', 'Left', 1), ('R', 'Right', -1)):
+        A = HX_ANK+np.array([sg*0.10, 0, 0])
+        Df = Ry(8*sg)@Rx(45); ball = A+Df@(RP[sd+'ToeBase']-RP[sd+'Foot'])
+        P['foot'+k] = (ball[0], ball[2], 45, ball[1]-BALL_Y); P['toefollow'+k] = True
+    W = body_W(P); hj = (W('LeftUpLeg')[:3, 3]+W('RightUpLeg')[:3, 3])/2
+    P['hips'] = HX_HJ-hj
+    W = body_W(P); Hd = W('Head')[:3, 3]; R = wrot(W('Head'))
+    for k, sg in (('L', 1), ('R', -1)):                           # руки скрещены на груди
+        U_ = nz(W('Spine2')[:3, 3]-W('Hips')[:3, 3]); X_ = np.array([1.0, 0, 0]); F_ = nz(np.cross(X_, U_))
+        So = W(('Right' if k == 'L' else 'Left')+'Arm')[:3, 3]
+        lay = 0.03 if k == 'L' else 0.0                              # левое предплечье поверх правого
+        P['hand'+k] = So+X_*sg*0.14-U_*(0.10+lay)+F_*(0.13+lay)       # запястье у груди, пальцы на противоположном плече
+        P['elbow'+k] = nz(-U_+F_*0.6+X_*sg*0.2); P['palm'+k] = -F_
+    return P
+animate('back_extension', [(0, dict(s=0)), (0.35, dict(s=0)), (1.5, dict(s=1)), (1.75, dict(s=1)), (2.85, dict(s=0))],
+        props_fn=lambda c, N: [(HYP, 'show', None)], hand=RELAX, fn=hyper_fn)

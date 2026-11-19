@@ -55,7 +55,7 @@ dst.samplers = [Sampler(magFilter=9729, minFilter=9987, wrapS=10497, wrapT=10497
 def add_tex(data):
     dst.images.append(GImage(bufferView=add_bytes(data), mimeType='image/jpeg'))
     dst.textures.append(Texture(sampler=0, source=len(dst.images)-1)); return len(dst.textures)-1
-t_col = add_tex(img_bytes(TEX+'/texture_pbr_20250901.png', 2048))
+t_col = add_tex(img_bytes(TEX+'/texture_pbr_20250901.png', 3072, q=90))   # 3K: чётко, но легче для слабых устройств
 t_nrm = add_tex(img_bytes(TEX+'/texture_pbr_20250901_normal.png', 2048, q=90))
 m = dst.materials[0]; m.name = 'Athlete'
 m.pbrMetallicRoughness = PbrMetallicRoughness(baseColorFactor=[1, 1, 1, 1], baseColorTexture=TextureInfo(index=t_col), metallicFactor=0.0, roughnessFactor=0.78)

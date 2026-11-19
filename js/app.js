@@ -3,6 +3,14 @@
 (function () {
   const D = window.EXERFLY;
   const MODELS = window.EXERFLY_MODELS || { m: 'models/exercises.glb', f: 'models/exercises_f.glb' };
+  /* model-viewer по умолчанию снижает разрешение отрисовки до 50%, если кадры «тяжёлые», — отсюда мыло.
+     Держим полное разрешение экрана. */
+  if (window.customElements) customElements.whenDefined('model-viewer').then(function () {
+    var MV = customElements.get('model-viewer');
+    /* на телефонах разрешаем небольшое снижение (до 85%), чтобы не подвисало; на компьютере — всегда полное */
+    var phone = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    if (MV) MV.minimumRenderScale = phone ? 0.85 : 1;
+  });
   const LANGS = ['sk', 'en', 'uk', 'ru'];
   const DEFAULT_LANG = 'sk';
   const app = document.getElementById('app');
@@ -662,7 +670,7 @@
     // персонаж: мужчина / женщина, выбор запоминается для следующих упражнений
     app.querySelectorAll('.who button').forEach(b => b.addEventListener('click', () => {
       if (S.who === b.dataset.who) return;
-      S.who = b.dataset.who; store.set('exerfly-character', S.who);
+      S.who = b.dataset.who; store.set('exerfly-character', S.who); window.dispatchEvent(new Event('exerfly-who'));
       app.querySelectorAll('.who button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
       overlay = []; body = null; ldDone = false; ld.hidden = false; ld.classList.remove('done'); showProgress(0); mv.src = MODELS[S.who]; setPaused(false);
     }));
@@ -741,4 +749,23 @@
   });
   renderHeader();
   route();
+
+  /* ---------- прогрев 3D ----------
+     Невидимый model-viewer заранее загружает модель, собирает шейдеры и загружает текстуры в видеокарту,
+     пока человек смотрит каталог. Потом страница упражнения берёт всё готовое — без подвисания при открытии. */
+  let warmEl = null;
+  function warm3d() {
+    if (!window.customElements || !customElements.get('model-viewer')) return;
+    if (!warmEl) {
+      warmEl = document.createElement('model-viewer');
+      warmEl.setAttribute('loading', 'eager'); warmEl.setAttribute('reveal', 'auto');
+      warmEl.setAttribute('aria-hidden', 'true'); warmEl.tabIndex = -1;
+      warmEl.style.cssText = 'position:fixed;right:0;bottom:0;width:2px;height:2px;opacity:0;pointer-events:none;z-index:-1';
+      document.body.appendChild(warmEl);
+    }
+    if (warmEl.getAttribute('src') !== MODELS[S.who]) warmEl.setAttribute('src', MODELS[S.who]);
+  }
+  const idle = window.requestIdleCallback || (f => setTimeout(f, 1200));
+  if (window.customElements) customElements.whenDefined('model-viewer').then(() => idle(warm3d, { timeout: 3000 }));
+  window.addEventListener('exerfly-who', warm3d);
 })();

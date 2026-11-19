@@ -38,9 +38,11 @@ EXERFLY.EXERCISES = [
     muscles: { primary: ['glutes'], secondary: ['hamstrings', 'quads'] },
     model: { target: '0m 0.5m 0.1m', orbit: '60deg 78deg 4.4m', max: '7m', variants: [{ anim: 'hip_thrust', label: 'classic' }] } },
   { id: 'leg-press', group: 'legs', level: 1, equipment: ['machine'], sets: '3–4', reps: '10–15', rest: 90,
-    muscles: { primary: ['quads', 'glutes'], secondary: ['hamstrings'] } },
+    muscles: { primary: ['quads', 'glutes'], secondary: ['hamstrings'] },
+    model: { target: '0m 0.75m 0.4m', orbit: '60deg 72deg 5.2m', max: '9m', variants: [{ anim: 'leg_press', label: 'classic' }] } },
   { id: 'calf-raise', group: 'legs', level: 1, equipment: ['bodyweight', 'machine'], sets: '3–4', reps: '15–20', rest: 45,
-    muscles: { primary: ['calves'], secondary: [] } },
+    muscles: { primary: ['calves'], secondary: [] },
+    model: { target: '0m 0.8m 0.05m', orbit: '60deg 82deg 4.9m', max: '8m', variants: [{ anim: 'calf_raise', label: 'classic' }] } },
 
   { id: 'overhead-squat', group: 'legs', level: 3, equipment: ['barbell'], sets: '3–4', reps: '5–8', rest: 120,
     muscles: { primary: ['quads', 'glutes'], secondary: ['shoulders', 'traps', 'abs', 'lower_back', 'hamstrings'] },
@@ -66,7 +68,8 @@ EXERFLY.EXERCISES = [
     muscles: { primary: ['lats'], secondary: ['traps', 'shoulders', 'biceps', 'forearms'] },
     model: { target: '0m 0.7m 0.1m', orbit: '60deg 75deg 4.2m', max: '7m', variants: [{ anim: 'dumbbell_row', label: 'classic' }] } },
   { id: 'back-extension', group: 'back', level: 1, equipment: ['machine'], sets: '3', reps: '12–15', rest: 60,
-    muscles: { primary: ['lower_back'], secondary: ['glutes', 'hamstrings'] } },
+    muscles: { primary: ['lower_back'], secondary: ['glutes', 'hamstrings'] },
+    model: { target: '0m 0.7m 0.3m', orbit: '70deg 80deg 4.6m', max: '8m', variants: [{ anim: 'back_extension', label: 'classic' }] } },
 
   /* ---------- грудь ---------- */
   { id: 'pushup', group: 'chest', level: 1, equipment: ['bodyweight'], sets: '3', reps: '10–20', rest: 60,
