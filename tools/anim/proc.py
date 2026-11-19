@@ -149,13 +149,22 @@ def lerp(a, b, t):
     if isinstance(a, (int, float)) and isinstance(b, (int, float)): return a+(b-a)*t
     return tuple(np.asarray(a, float)+(np.asarray(b, float)-np.asarray(a, float))*t)
 
-def animate(name, keys, props_fn=None, hand=None, grip=False, fn=None):
+HOLD = 0.1                                                  # макс. длительность паузы между фазами, с
+def animate(name, keys, props_fn=None, hand=None, grip=False, fn=None, live=True):
     """keys: [(время, {параметры})]; недостающие параметры наследуются от предыдущего ключа.
     Последний ключ должен совпадать с первым (петля)."""
     full = []; cur = {}
     for t, p in keys:
         cur = {**cur, **p}; full.append((t, dict(cur)))
+    # паузы (соседние ключи с одинаковой позой) — очень короткие, чтобы персонаж не «застывал»
+    same = lambda a, b: all(k in b and np.allclose(np.asarray(a[k], float), np.asarray(b[k], float)) for k in a)
+    t_new = [0.0]
+    for i in range(1, len(full)):
+        d = full[i][0]-full[i-1][0]
+        t_new.append(t_new[-1]+(min(d, HOLD) if same(full[i-1][1], full[i][1]) else d))
+    full = [(tn, p) for tn, (_, p) in zip(t_new, full)]
     T = full[-1][0]; N = int(round(T*FPS))+1
+    wb = 2*np.pi*max(1, round(T/3.2))/T                     # дыхание: целое число циклов за петлю — без рывка на стыке
     frames = []; TW_PREV.clear()
     for f in range(N):
         t = f/FPS; i = max(j for j in range(len(full)) if full[j][0] <= t+1e-9); i = min(i, len(full)-2)
@@ -166,6 +175,12 @@ def animate(name, keys, props_fn=None, hand=None, grip=False, fn=None):
             if isinstance(P[k], tuple) and len(P[k]) == 3 and k.startswith(('hand', 'grip', 'elbow', 'palm', 'hips')): P[k] = np.array(P[k])
         P['t'] = t                                          # время кадра — для мелких «живых» движений
         if fn: P = fn(P)
+        if live:                                            # лёгкое дыхание и движения головы
+            br = np.sin(wb*t); sp = P.get('spine', (0, 0, 0))
+            P['spine'] = (sp[0]+0.8*br, sp[1]+0.6*np.sin(wb*t*0.5+0.7)*(round(T/3.2) % 2 == 0), sp[2])
+            P['neck'] = P.get('neck', 0)+0.9*np.sin(wb*t+0.6)
+            P['head'] = P.get('head', 0)+0.7*np.sin(2*wb*t+1.3)
+            cl = P.get('clav', (0, 0)); P['clav'] = (cl[0]+0.9*(br+1)/2, cl[1]+0.9*(br+1)/2)
         c, _ = (solve_grip if grip else solve)(P); frames.append(c)
     clip = {}
     for b in frames[0]:

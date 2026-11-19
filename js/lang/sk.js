@@ -18,6 +18,7 @@ EXERFLY.LANG.sk = {
     variants: { classic: 'Klasika', armsForward: 'Ruky vpred', overhand: 'Nadhmat' },
     footer: 'Odporúčania sú orientačné, váhu si prispôsob sebe.', skip: 'Preskočiť na obsah', mainNav: 'Hlavné menu', homeLabel: 'Exerfly – domov', metaDesc: 'Exerfly — katalóg cvikov s 3D animáciami, technikou a mapou zapojených svalov.', clearSearch: 'Vymazať hľadanie', variant: 'Variant cviku', breadcrumbs: 'Navigácia',
     play: 'Prehrať', pause: 'Pozastaviť', speed: 'Rýchlosť', glow: 'Zvýrazniť svaly', phase: 'Fáza pohybu',
+    view: 'Pohľad', views: { auto: 'Prehľad', front: 'Spredu', side: 'Zboku', back: 'Zozadu' },
     character: 'Postava', male: 'Muž', female: 'Žena',
     darkMode: 'Tmavý režim', loading3d: 'Načítavam 3D', favorites: 'Obľúbené', addFav: 'Do obľúbených', inFav: 'V obľúbených', removeFav: 'Odstrániť z obľúbených', favEmptyTitle: 'Zatiaľ nemáš obľúbené', favEmptyHint: 'Ťukni na srdiečko pri cviku a uložíš si ho sem.', share: 'Zdieľať', linkCopied: 'Odkaz skopírovaný', prevEx: 'Predchádzajúci', nextEx: 'Ďalší', exNav: 'Ďalšie cviky', keysHint: 'medzerník — pauza', showResults: 'Zobraziť', collapseFilters: 'Zavrieť filtre', collapse: 'Zbaliť menu', expand: 'Rozbaliť menu', language: 'Jazyk', open: 'Otvoriť'
   },

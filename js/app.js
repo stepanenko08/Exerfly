@@ -564,6 +564,9 @@
           <div class="seg who" role="group" aria-label="${esc(t.character)}">
             ${['m', 'f'].map(v => `<button type="button" data-who="${v}" aria-pressed="${S.who === v}">${esc(v === 'm' ? t.male : t.female)}</button>`).join('')}
           </div>
+          <div class="seg views" role="group" aria-label="${esc(t.view)}">
+            ${['auto', 'front', 'side', 'back'].map(v => `<button type="button" data-view="${v}" aria-pressed="${v === 'auto'}">${esc(t.views[v])}</button>`).join('')}
+          </div>
           ${md.variants.length > 1 ? `<div class="seg variants" role="group" aria-label="${esc(t.variant)}">${md.variants.map((v, i) =>
             `<button type="button" data-anim="${v.anim}" aria-pressed="${i === 0}">${esc(t.variants[v.label] || v.label)}</button>`).join('')}</div>` : ''}
         </div>
@@ -667,6 +670,26 @@
       mv.animationName = b.dataset.anim; mv.play(); setPaused(false);
       app.querySelectorAll('.variants button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
     }));
+    // ракурс камеры одним нажатием: обзор (по умолчанию), спереди, сбоку, сзади
+    const VIEW_THETA = { front: 0, side: 90, back: 180 };
+    const md = ex.model;
+    const viewBtns = app.querySelectorAll('.views button');
+    const markView = v => viewBtns.forEach(o => { o.classList.remove('stale'); o.setAttribute('aria-pressed', String(o.dataset.view === v)); });
+    viewBtns.forEach(b => b.addEventListener('click', () => {
+      const v = b.dataset.view, def = camOrbit(md).split(/\s+/);
+      mv.cameraTarget = md.target;
+      if (v === 'auto') mv.cameraOrbit = def.join(' ');
+      else {
+        const r = mv.getCameraOrbit ? mv.getCameraOrbit().radius : parseFloat(def[2]);   // приближение сохраняем
+        mv.cameraOrbit = `${VIEW_THETA[v]}deg ${def[1]} ${r.toFixed(2)}m`;
+      }
+      markView(v);
+    }));
+    // покрутили модель — выбранный ракурс не снимаем, а приглушаем; повторное нажатие вернёт камеру
+    mv.addEventListener('camera-change', e => {
+      if (!e.detail || e.detail.source !== 'user-interaction') return;
+      viewBtns.forEach(o => { if (o.getAttribute('aria-pressed') === 'true') { o.classList.add('stale'); o.setAttribute('aria-pressed', 'false'); } });
+    });
     // персонаж: мужчина / женщина, выбор запоминается для следующих упражнений
     app.querySelectorAll('.who button').forEach(b => b.addEventListener('click', () => {
       if (S.who === b.dataset.who) return;

@@ -18,6 +18,7 @@ EXERFLY.LANG.uk = {
     variants: { classic: 'Класика', armsForward: 'Руки вперед', overhand: 'Прямий хват' },
     footer: 'Рекомендації орієнтовні, підбирай вагу під себе.', skip: 'Перейти до вмісту', mainNav: 'Головне меню', homeLabel: 'Exerfly – головна', metaDesc: 'Exerfly — каталог вправ із 3D-анімаціями, технікою та картою задіяних м’язів.', clearSearch: 'Очистити пошук', variant: 'Варіант вправи', breadcrumbs: 'Навігація',
     play: 'Відтворити', pause: 'Пауза', speed: 'Швидкість', glow: 'Підсвітити м’язи', phase: 'Фаза руху',
+    view: 'Ракурс', views: { auto: 'Огляд', front: 'Спереду', side: 'Збоку', back: 'Ззаду' },
     character: 'Персонаж', male: 'Чоловік', female: 'Жінка',
     darkMode: 'Темна тема', loading3d: 'Завантажуємо 3D', favorites: 'Обране', addFav: 'В обране', inFav: 'В обраному', removeFav: 'Прибрати з обраного', favEmptyTitle: 'В обраному поки порожньо', favEmptyHint: 'Натисни на сердечко біля вправи, щоб зберегти її тут.', share: 'Поділитися', linkCopied: 'Посилання скопійовано', prevEx: 'Попередня', nextEx: 'Наступна', exNav: 'Інші вправи', keysHint: 'пробіл — пауза', showResults: 'Показати', collapseFilters: 'Закрити фільтри', collapse: 'Згорнути меню', expand: 'Розгорнути меню', language: 'Мова', open: 'Відкрити'
   },
