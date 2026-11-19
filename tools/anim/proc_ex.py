@@ -842,7 +842,7 @@ LPU = nz(_W('Spine2')[:3, 3]-_W('Hips')[:3, 3]); LPB = nz(np.cross(LPU, [1, 0, 0
 LP_OFF = LP_N*0.10                                                 # стопы чуть выше линии таза
 def lp_ankles(D):
     return [LPH+LP_R*D+LP_OFF+np.array([sg*0.17, 0, 0]) for sg in (1, -1)]
-LP_DTOP = np.sqrt(max(0, (_LL*0.965)**2-0.10**2)); LP_DBOT = _LL*0.50
+LP_DTOP = np.sqrt(max(0, (_LL*0.965)**2-0.10**2)); LP_DBOT = _LL*0.63
 SOLE = 0.105                                                       # от голеностопа до подошвы
 def leg_press_machine():
     fr, pad, acc, rub = Geo(), Geo(), Geo(), Geo()
