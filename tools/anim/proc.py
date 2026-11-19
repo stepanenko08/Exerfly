@@ -78,7 +78,7 @@ def solve(P):
         f = P['foot'+sd[0]]
         ball = np.array([f[0], BALL_Y+(f[3] if len(f) > 3 else 0), f[1]], float)
         heel = f[2] if len(f) >= 3 else 0; yaw = P.get('toe', 8)*(1 if sd == 'Left' else -1)
-        Df = Ry(yaw)@Rx(heel); D[sd+'Foot'] = Df; D[sd+'ToeBase'] = Ry(yaw)
+        Df = Ry(yaw)@Rx(heel); D[sd+'Foot'] = Df; D[sd+'ToeBase'] = Df if P.get('toefollow'+sd[0]) else Ry(yaw)   # стопа подъёмом на скамье — пальцы вместе со стопой
         ankle = ball - Df@(RP[sd+'ToeBase']-RP[sd+'Foot'])
         P['_ankle'+sd[0]] = ankle
     W = rig.world(po.clip(hips), 0)
@@ -163,6 +163,7 @@ def animate(name, keys, props_fn=None, hand=None, grip=False, fn=None):
         P = {k: lerp(a[k], b[k], x) if k in b else a[k] for k in a}
         for k in P:
             if isinstance(P[k], tuple) and len(P[k]) == 3 and k.startswith(('hand', 'grip', 'elbow', 'palm', 'hips')): P[k] = np.array(P[k])
+        P['t'] = t                                          # время кадра — для мелких «живых» движений
         if fn: P = fn(P)
         c, _ = (solve_grip if grip else solve)(P); frames.append(c)
     clip = {}
@@ -177,9 +178,9 @@ def animate(name, keys, props_fn=None, hand=None, grip=False, fn=None):
 
 def bar_track(clip, N):
     return barbell_props(grips(clip, N))
-def dumbbell_track(clip, N):
+def dumbbell_track(clip, N, nodes=None):
     G = grips(clip, N); out = []
-    for node, side in ((DB[0], 'l'), (DB[1], 'r')):
+    for node, side in zip(nodes or DB, ('l', 'r')):
         t = [g['g'+side] for g in G]; r = fix_sign([look(g['a'+side]) for g in G])
         out += [(node, 'show', None), (node, 'translation', t), (node, 'rotation', r)]
     return out

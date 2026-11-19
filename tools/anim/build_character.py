@@ -295,7 +295,7 @@ def curl(clip, N, angles):
     for side in ('Left', 'Right'):
         Rh = REST(side+'Hand')[:3, :3]
         palm = -Rh[:, 2] if False else None
-        for i, ang in zip((1, 2, 3), angles):
+        for i, ang in zip((1, 2, 3), angles[side] if isinstance(angles, dict) else angles):
             b = f'{side}HandIndex{i}'
             if b not in JOINTS: continue
             Rb = REST(b)[:3, :3]

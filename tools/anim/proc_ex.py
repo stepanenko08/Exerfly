@@ -265,3 +265,314 @@ def incline_bench():
 IBENCH = incline_bench()
 animate('incline_dumbbell_press', [(0, dict(s=0)), (0.35, dict(s=0)), (1.15, dict(s=1)), (1.4, dict(s=1)), (2.8, dict(s=0))],
         props_fn=lambda c, N: [(IBENCH, 'show', None)]+dumbbell_track(c, N), grip=True, fn=incline_fn)
+
+# ================= партия 2: румынская тяга, тяга штанги в наклоне, подъёмы на бицепс, молотки, скручивания =================
+def hang_grip(P, half, side):
+    """Кулак прямо под плечом (руки висят вертикально), хват на расстоянии half от центра."""
+    S = shoulder(P, side); sg = 1 if side == 'Left' else -1
+    dx = half-abs(S[0]); dy = np.sqrt(max(1e-6, (REACH*0.985)**2-dx**2))
+    return np.array([sg*half, S[1]-dy, S[2]])
+
+def body_W(P):
+    c, _ = solve({k: v for k, v in P.items() if not k.startswith(('hand', 'grip'))}); return rig.world(c, 0)
+def clear_bar(P, bar, side_legs=('Left', 'Right'), clr=0.085):
+    """Сдвигает гриф вперёд (по +Z), пока он не отойдёт от бёдер/колен на clr (в плоскости YZ)."""
+    W = body_W(P); yz = lambda v: np.array([v[1], v[2]])
+    segs = [(yz(W(sd+'UpLeg')[:3, 3]), yz(W(sd+'Leg')[:3, 3])) for sd in side_legs]
+    segs += [(yz(W(sd+'Leg')[:3, 3]), yz(W(sd+'Foot')[:3, 3])) for sd in side_legs]
+    dz = 0.0
+    for _ in range(60):
+        q = np.array([bar[1], bar[2]+dz])
+        if min(seg_dist(q, a, b) for a, b in segs) >= clr*BODY: break
+        dz += 0.004
+    return dz
+
+# ---------------- румынская тяга ----------------
+RDL_FEET = dict(footL=(0.12, 0.08), footR=(-0.12, 0.08), toe=8)
+def rdl_fn(P):
+    s = P['s']                                                  # 0 — стоя, 1 — внизу
+    th = 72*s                                                   # наклон корпуса: таз уходит назад, спина прямая
+    P.update(**RDL_FEET, pelvis=(th*0.9, 0, 0), spine=(th*0.1, 0, 0), neck=-th*0.35, head=-th*0.2, kneeout=4,
+             hips=(0, RP['Hips'][1]-0.075*s-0.012, -0.30*s))
+    gl = hang_grip(P, 0.24, 'Left'); dz = clear_bar(P, gl, clr=0.13)          # гриф скользит по бёдрам, не сквозь них
+    for k, sd in (('L', 'Left'), ('R', 'Right')):
+        P['grip'+k] = hang_grip(P, 0.24, sd)+np.array([0, 0, dz])
+        P['elbow'+k] = np.array([0.3 if k == 'L' else -0.3, 0, -1.0]); P['palm'+k] = np.array([0, 0, -1.0]); P['axis'+k] = np.array([1.0, 0, 0])
+    return P
+animate('romanian_deadlift', [(0, dict(s=0)), (0.4, dict(s=0)), (1.9, dict(s=1)), (2.15, dict(s=1)), (3.25, dict(s=0))],
+        props_fn=bar_track, grip=True, fn=rdl_fn)
+
+# ---------------- тяга штанги в наклоне ----------------
+ROW_BASE = dict(footL=(0.17, 0.05), footR=(-0.17, 0.05), toe=10, kneeout=6,
+                pelvis=(52, 0, 0), spine=(8, 0, 0), neck=-24, head=-10, hips=(0, 0.84, -0.20))
+_c, _ = solve(ROW_BASE); _W = rig.world(_c, 0)
+ROW_H = _W('Hips')[:3, 3]; ROW_U = nz(_W('Spine2')[:3, 3]-ROW_H); ROW_F = nz(np.cross([1, 0, 0], ROW_U))   # вперёд от груди
+ROW_TF = 0.33
+def row_fn(P):
+    s = P['s']; P.update(ROW_BASE)
+    # корпус не застывший: на подъёме чуть выпрямляется и подаётся, голова следует, колени пружинят
+    P.update(pelvis=(52-6*s, 0, 0), spine=(8-3*s+1.5*np.sin(np.pi*s), 0, 0), neck=-24+4*s, head=-10+2*s,
+             hips=(0, 0.84+0.012*s, -0.20+0.015*s))
+    W = body_W(P); H = W('Hips')[:3, 3]; U_ = nz(W('Spine2')[:3, 3]-H); F_ = nz(np.cross([1, 0, 0], U_))
+    for k, sd, sg in (('L', 'Left', 1), ('R', 'Right', -1)):
+        bottom = hang_grip(P, 0.26, sd)
+        top = H+U_*0.20+F_*ROW_TF+np.array([sg*0.26, 0, 0])                     # к животу; локти не выше линии спины
+        g = bottom+(top-bottom)*s+np.array([0, 0, -0.03])*np.sin(np.pi*s)
+        P['grip'+k] = g
+        P['elbow'+k] = nz(lerp((sg*0.35, 0.0, -1.0), (sg*0.45, 0.45, -1.0), s))
+        P['palm'+k] = np.array([0, 0, -1.0]); P['axis'+k] = np.array([1.0, 0, 0])
+    return P
+animate('barbell_row', [(0, dict(s=0)), (0.35, dict(s=0)), (1.0, dict(s=1)), (1.25, dict(s=1)), (2.25, dict(s=0))],
+        props_fn=bar_track, grip=True, fn=row_fn)
+
+# ---------------- подъём штанги / гантелей на бицепс ----------------
+CURL_BASE = dict(footL=(0.16, 0.06), footR=(-0.16, 0.06), toe=10, hips=(0, RP['Hips'][1]-0.01, 0), pelvis=(0, 0, 0), spine=(0, 0, 0))
+def curl_arm(P, k, phi, width):
+    """Плечо висит у корпуса, предплечье поднимается на угол phi (0 — рука прямая)."""
+    sd = 'Left' if k == 'L' else 'Right'; sg = 1 if k == 'L' else -1
+    S = shoulder(P, sd); Lm = LIMB[(sd, 'arm')]
+    E = S+Lm['la']*nz(np.array([sg*0.10, -1, 0.06+0.22*(phi/140)**2]))   # локоть у бока, вверху чуть выходит вперёд
+    a = np.radians(max(phi, 4))
+    W_ = E+Lm['lb']*np.array([sg*(width-abs(E[0]))/Lm['lb']*np.cos(a)*0.0, -np.cos(a), np.sin(a)])
+    W_[0] = sg*max(abs(W_[0]), width)
+    P['hand'+k] = W_; P['elbow'+k] = np.array([sg*0.15, -0.2, -1.0])
+def fist_clear(P, k='L'):
+    c, _ = solve(P); W = rig.world(c, 0); sd = 'Left' if k == 'L' else 'Right'
+    f = np.mean([W(sd+'Hand'+g)[:3, 3] for g in GRIP], 0); yz = lambda v: np.array([v[1], v[2]])
+    return min(seg_dist(yz(f), yz(W(s_+'UpLeg')[:3, 3]), yz(W(s_+'Leg')[:3, 3])) for s_ in ('Left', 'Right'))
+CURL_PHI0 = 8
+for _ph in range(8, 46, 2):                                    # внизу гриф перед бёдрами, а не в них
+    _P = dict(CURL_BASE)
+    for _k in 'LR': curl_arm(_P, _k, _ph, 0.20); _P['axis'+_k] = np.array([1.0, 0, 0])
+    CURL_PHI0 = _ph
+    if fist_clear(_P) >= 0.13*BODY: break
+print('  curl start angle', CURL_PHI0)
+def barbell_curl_fn(P):
+    s = P['s']; P.update(CURL_BASE); P['spine'] = (-3*s, 0, 0)
+    phi = CURL_PHI0+(125-CURL_PHI0)*s                          # вверху гриф у плеч, не в груди
+    for k in 'LR':
+        curl_arm(P, k, phi, 0.20)
+        P['axis'+k] = np.array([1.0, 0, 0]); P['palm'+k] = nz(np.array([0, np.sin(np.radians(phi)), np.cos(np.radians(phi))]))  # ладони вперёд/вверх
+        P['wrist'+k] = 6*s
+    return P
+animate('barbell_curl', [(0, dict(s=0)), (0.35, dict(s=0)), (1.35, dict(s=1)), (1.6, dict(s=1)), (2.85, dict(s=0))],
+        props_fn=bar_track, fn=barbell_curl_fn)
+
+def heavy_dumbbells():
+    hd = Geo(); hd.cyl([0, 0, 0], [1, 0, 0], 0.016, 0.17)
+    hh = Geo()
+    for sg in (-1, 1): hh.cyl([sg*0.125, 0, 0], [1, 0, 0], 0.062, 0.09, seg=6)
+    return [add_node(n, add_mesh([(mid['Chrome'], hd), (M_RUBBER, hh)])) for n in ('DumbbellHeavyL', 'DumbbellHeavyR')]
+DBH = heavy_dumbbells()
+def hammer_fn(P):
+    a, b = P['a'], P['b']; t = P.get('t', 0)
+    w = a-b                                                       # куда смещён вес: к рабочей руке
+    P.update(footL=(0.17, 0.07), footR=(-0.17, 0.05), toe=12, kneeout=4,
+             hips=(0.012*w, RP['Hips'][1]-0.008+0.003*np.sin(t*2.1), 0.004*np.sin(t*1.3)),
+             pelvis=(2.5, 2.5*w, -1.8*w), spine=(1.5+0.8*np.sin(t*2.1), -3*w, 1.2*w), neck=-2, head=-3+2*(a+b))
+    for k, key in (('L', 'a'), ('R', 'b')):
+        phi = 10+124*P[key]
+        curl_arm(P, k, phi, 0.205)
+        P['palm'+k] = np.array([-1.0 if k == 'L' else 1.0, 0, 0.15])                       # нейтральный хват: ладони к телу
+    return P
+animate('hammer_curl', [(0, dict(a=0, b=0)), (0.3, dict(a=0, b=0)), (1.3, dict(a=1, b=0)), (1.5, dict(a=1, b=0)), (2.55, dict(a=0, b=0)),
+                        (2.85, dict(a=0, b=0)), (3.85, dict(a=0, b=1)), (4.05, dict(a=0, b=1)), (5.1, dict(a=0, b=0))],
+        props_fn=lambda c, N: dumbbell_track(c, N, DBH), fn=hammer_fn)
+
+# ---------------- скручивания на коврике ----------------
+CR_HIP_Y = 0.105
+CR_BASE = dict(hips=(0, CR_HIP_Y, 0), pelvis=(-90, 0, 0), toe=4, neck=0, head=0,
+               footL=(0.14, 0.50), footR=(-0.14, 0.50), kneeL=(0, 1, 0.2), kneeR=(0, 1, 0.2))
+def crunch_fn(P):
+    s = P['s']; P.update(CR_BASE); P.update(spine=(34*s, 0, 0), neck=14+10*s, head=4)
+    c, _ = solve({k: v for k, v in P.items() if not k.startswith(('hand', 'grip'))}); W = rig.world(c, 0)
+    Hd = W('Head')[:3, 3]; R = wrot(W('Head'))
+    for k, sg in (('L', 1), ('R', -1)):
+        P['hand'+k] = Hd+R@np.array([sg*0.075, 0.07, -0.085])                # ладони за затылком
+        P['elbow'+k] = np.array([sg*1.0, 0.25, 0.0]); P['palm'+k] = R@np.array([0, 0, 1.0])
+    return P
+def exercise_mat():
+    g_, edge = Geo(), Geo()
+    rbox(g_, [0, 0.006, -0.05], (0.62, 0.012, 1.80), 0.006, n=4)
+    for sg in (-1, 1): rbox(edge, [sg*0.3125, 0.0065, -0.05], (0.004, 0.0105, 1.78), 0.002, n=3)
+    M_MAT = mat('Mat', (0.035, 0.036, 0.04), 0.0, 0.85)
+    return add_node('Mat', add_mesh([(M_MAT, g_), (M_ACCENT, edge)]))
+MAT = exercise_mat()
+animate('crunch', [(0, dict(s=0)), (0.35, dict(s=0)), (0.95, dict(s=1)), (1.25, dict(s=1)), (2.05, dict(s=0))],
+        props_fn=lambda c, N: [(MAT, 'show', None)], hand=RELAX, fn=crunch_fn)
+
+# ================= партия 3: упражнения с горизонтальной скамьёй =================
+FB_TOP = 0.44                                                   # верх подушки скамьи
+def flat_bench_mesh():
+    pad, fr, rub, acc = Geo(), Geo(), Geo(), Geo()
+    L = 1.20
+    rbox(pad, [0, FB_TOP-0.035, 0], (0.28, 0.07, L), 0.028)
+    rbox(fr, [0, FB_TOP-0.08, 0], (0.24, 0.02, L-0.06), 0.004)
+    by = 0.30
+    rtube(fr, [0, by, -L/2+0.08], [0, by, L/2-0.08], 0.07, 0.08)              # продольная балка
+    rtube(fr, [0, by+0.04, -0.3], [0, FB_TOP-0.09, -0.3], 0.05, 0.03, up=(0, 0, 1))
+    rtube(fr, [0, by+0.04, 0.3], [0, FB_TOP-0.09, 0.3], 0.05, 0.03, up=(0, 0, 1))
+    for z, w in ((-L/2+0.12, 0.50), (L/2-0.12, 0.46)):
+        rtube(fr, [0, 0.07, z], [0, by, z], 0.06, 0.06, up=(0, 0, 1))         # стойка
+        tube(fr, [-w/2, 0.045, z], [w/2, 0.045, z], 0.035)                     # опора
+        for sg in (-1, 1):
+            rbox(rub, [sg*(w/2-0.02), 0.012, z], (0.06, 0.024, 0.075), 0.01)
+            tube(rub, [sg*(w/2+0.004), 0.045, z], [sg*(w/2+0.02), 0.045, z], 0.037)
+    rub.cyl([0, 0.05, L/2-0.02], [1, 0, 0], 0.045, 0.06)                     # колесо для перемещения
+    for sg in (-1, 1): rbox(acc, [sg*0.0362, by, 0], (0.004, 0.012, L-0.30), 0.002)
+    return add_mesh([(M_PAD, pad), (M_STEEL, fr), (M_RUBBER, rub), (M_ACCENT, acc)])
+FB_MESH = flat_bench_mesh()
+def flat_bench(name, x=0.0, z=0.0, across=False):
+    i = add_node(name, FB_MESH, (x, 0, z))
+    if across: dst.nodes[i].rotation = [0.0, float(np.sqrt(.5)), 0.0, float(np.sqrt(.5))]
+    return i
+
+def ez_bar():
+    """Короткий гриф с небольшими блинами (для разгибаний лёжа). Ось X, центр — середина грифа."""
+    b, pl, cl = Geo(), Geo(), Geo()
+    b.cyl([0, 0, 0], [1, 0, 0], 0.0135, 0.98)
+    for sg in (-1, 1):
+        b.cyl([sg*0.55, 0, 0], [1, 0, 0], 0.024, 0.16)
+        cl.cyl([sg*0.475, 0, 0], [1, 0, 0], 0.032, 0.025)
+        pl.cyl([sg*0.515, 0, 0], [1, 0, 0], 0.115, 0.032, seg=40)
+        pl.cyl([sg*0.55, 0, 0], [1, 0, 0], 0.095, 0.03, seg=40)
+    return add_node('EZBar', add_mesh([(mid['Chrome'], b), (M_RUBBER, pl), (M_ACCENT, cl)]))
+EZB = ez_bar()
+def ez_track(clip, N):
+    t = []; r = []
+    for g in grips(clip, N): t.append((g['gl']+g['gr'])/2); r.append(look(g['gl']-g['gr']))
+    return [(EZB, 'show', None), (EZB, 'translation', t), (EZB, 'rotation', fix_sign(r))]
+
+# ---------------- лёжа на скамье: база ----------------
+SUP = dict(hips=(0, FB_TOP+0.093, 0), pelvis=(-90, 0, 0), spine=(0, 0, 0), neck=4, head=0,
+           footL=(0.27, 0.56), footR=(-0.27, 0.56), toe=14, kneeout=10)
+FB_SUP = flat_bench('FlatBench', z=-0.33)
+
+# ---------------- разведение гантелей лёжа ----------------
+def fly_fn(P):
+    s = P['s']; P.update(SUP); P['spine'] = (-3*s, 0, 0)          # внизу грудь чуть раскрыта
+    for k, sd, sg in (('L', 'Left', 1), ('R', 'Right', -1)):
+        S = shoulder(P, sd)
+        a = np.radians(-9+82*s)                                   # от «над грудью» до уровня плеч
+        r = REACH*(0.95-0.07*s)                                    # локти мягко согнуты, внизу — сильнее
+        P['grip'+k] = S+r*np.array([sg*np.sin(a), np.cos(a), 0.0])+np.array([0, 0.0, 0.05])
+        P['elbow'+k] = nz(lerp((sg*1.0, 0.1, 0.1), (sg*0.15, -1.0, 0.15), s))
+        P['palm'+k] = nz(np.array([-sg*np.cos(a), np.sin(a), 0.0])); P['axis'+k] = np.array([0, 0, 1.0])
+    return P
+animate('dumbbell_fly', [(0, dict(s=0)), (0.35, dict(s=0)), (1.5, dict(s=1)), (1.7, dict(s=1)), (2.8, dict(s=0))],
+        props_fn=lambda c, N: [(FB_SUP, 'show', None)]+dumbbell_track(c, N), grip=True, fn=fly_fn)
+
+# ---------------- французский жим лёжа ----------------
+SK_TILT = 14; SK_BEND = 94
+def skull_fn(P):
+    s = P['s']; P.update(SUP)
+    for k, sd, sg in (('L', 'Left', 1), ('R', 'Right', -1)):
+        S = shoulder(P, sd); Lm = LIMB[(sd, 'arm')]
+        b = np.radians(SK_TILT); u = nz(np.array([-sg*0.10, np.cos(b), -np.sin(b)]))    # плечо почти вертикально, к голове
+        E = S+Lm['la']*u
+        f = np.radians(SK_TILT+6+(SK_BEND-6)*s); fa = np.array([0, np.cos(f), -np.sin(f)])
+        Wr = E+Lm['lb']*fa
+        P['hand'+k] = Wr
+        P['elbow'+k] = nz(np.array([sg*0.12, 0.85, 0.5]))            # постоянный полюс — без рывков у верхней точки
+        P['axis'+k] = np.array([1.0, 0, 0]); P['palm'+k] = np.array([0, np.sin(f), np.cos(f)])
+        P['wrist'+k] = 10*s
+    return P
+animate('skull_crusher', [(0, dict(s=0)), (0.35, dict(s=0)), (1.45, dict(s=1)), (1.65, dict(s=1)), (2.7, dict(s=0))],
+        props_fn=lambda c, N: [(FB_SUP, 'show', None)]+ez_track(c, N), fn=skull_fn)
+
+# ---------------- тяга гантели одной рукой с упором в скамью ----------------
+def foot_on_bench(ankle, heel, side, yaw):
+    """Параметры стопы, у которой голеностоп в точке ankle (стопа подъёмом на скамье, носок назад)."""
+    Df = Ry(yaw*(1 if side == 'Left' else -1))@Rx(heel)
+    ball = ankle+Df@(RP[side+'ToeBase']-RP[side+'Foot'])
+    return (ball[0], ball[2], heel, ball[1]-BALL_Y)
+DR_X = 0.14                                                      # скамья под левым коленом и левой рукой
+FB_ROW = flat_bench('FlatBenchRow', x=DR_X, z=0.16)
+DR_KA = 34                                                       # бедро опорной ноги наклонено назад — таз ниже
+def dr_base(th):
+    P = dict(pelvis=(th, 0, 0), spine=(2, 0, 0), neck=-18, head=-6, toe=6, footR=(-0.21, 0.10), hips=(0, 0, 0))
+    P['footL'] = (0.12, -0.3, 160, 0.4)
+    W = body_W(P); hj = W('LeftUpLeg')[:3, 3]; la = LIMB[('Left', 'leg')]['la']; lb = LIMB[('Left', 'leg')]['lb']
+    knee = np.array([DR_X-0.01, FB_TOP+0.066, 0.0]); ka = np.radians(DR_KA)
+    hy = knee[1]+la*0.995*np.cos(ka)-hj[1]
+    P['hips'] = (DR_X-0.01-hj[0], hy, knee[2]-hj[2]+la*0.995*np.sin(ka))
+    ank = np.array([knee[0], FB_TOP+0.055, knee[2]-np.sqrt(lb**2-0.011**2)*0.995])
+    P['footL'] = foot_on_bench(ank, 145, 'Left', 6); P['kneeL'] = np.array([0, -1.0, 0.25]); P['toefollowL'] = True
+    hr = body_W(P)('RightUpLeg')[:3, 3]
+    P['footR'] = (hr[0]-0.08, hr[2]+0.12)                          # стоящая нога — под тазом, чуть в сторону
+    return P
+ARM_W = LIMB[('Left', 'arm')]['la']+LIMB[('Left', 'arm')]['lb']           # плечо → запястье
+for _th in range(60, 110):                                       # корпус почти параллельно полу, опорная рука прямая
+    _W = body_W(dr_base(_th))
+    if _W('LeftArm')[1, 3]-(FB_TOP+0.06) <= ARM_W*0.95: break
+DR_TH = _th; _S = _W('LeftArm')[:3, 3]; print('  dumbbell row: pelvis pitch', DR_TH, 'shoulder y %.3f hips y %.3f' % (_S[1], _W('Hips')[1, 3]))
+DR_TF = 0.30
+_W = body_W(dr_base(DR_TH)); _SL = _W('LeftArm')[:3, 3]
+_dy = _SL[1]-(FB_TOP+0.06); _dz = np.sqrt(max(0, (ARM_W*0.975)**2-_dy**2-0.02**2))
+DR_HAND = np.array([_SL[0]+0.02, FB_TOP+0.06, min(_SL[2]+_dz, 0.16+0.6-0.07)])
+DR_WRIST = -75
+def drow_fn(P):
+    s = P['s']; P.update(dr_base(DR_TH))
+    # небольшое, почти параллельное полу движение корпуса: чуть поднимается и раскрывается к рабочей руке
+    h = np.array(P['hips']); P['hips'] = tuple(h+np.array([-0.008*s, 0.018*s, -0.012*s]))
+    P['pelvis'] = (DR_TH-2.5*s, -2*s, -2*s); P['spine'] = (2-1.5*s, -5*s, -4*s)
+    W = body_W(P); H = W('Hips')[:3, 3]; U_ = nz(W('Spine2')[:3, 3]-H); F_ = nz(np.cross([1, 0, 0], U_))
+    P['handL'] = DR_HAND                                          # опорная ладонь неподвижно лежит на скамье
+    P['elbowL'] = np.array([0.3, 0, -1.0]); P['palmL'] = np.array([0, -1.0, 0]); P['wristL'] = DR_WRIST
+    SR = W('RightArm')[:3, 3]
+    bottom = np.array([SR[0]-0.03, SR[1]-(REACH*0.97), SR[2]+0.04])
+    top = H+U_*0.14+F_*DR_TF+np.array([-0.21, 0, 0])
+    P['gripR'] = bottom+(top-bottom)*s
+    P['elbowR'] = nz(lerp((-0.25, 0.0, -1.0), (-0.3, 0.5, -1.0), s))
+    P['palmR'] = np.array([1.0, 0, 0]); P['axisR'] = np.array([0, 0, 1.0])
+    return P
+def one_db(clip, N):
+    out = dumbbell_track(clip, N)
+    return [x for x in out if x[0] == DB[1]]
+animate('dumbbell_row', [(0, dict(s=0)), (0.3, dict(s=0)), (1.0, dict(s=1)), (1.25, dict(s=1)), (2.3, dict(s=0))],
+        props_fn=lambda c, N: [(FB_ROW, 'show', None)]+one_db(c, N), grip=True, hand={'Left': FLAT, 'Right': FIST}, fn=drow_fn)
+
+# ---------------- болгарские выпады ----------------
+BSS_FX = 0.12
+FB_BSS = flat_bench('FlatBenchSplit', x=-0.10, z=-1.06)
+def bss_fn(P):
+    s = P['s']
+    P.update(toe=8, kneeout=4, pelvis=(6+12*s, 0, 0), spine=(3+3*s, 0, 0), neck=-6-8*s, head=-2,
+             hips=(0.02, 0.80-0.27*s, -0.04-0.06*s), footL=(BSS_FX, 0.36))
+    lb = LIMB[('Right', 'leg')]['lb']
+    P['footR'] = foot_on_bench(np.array([-0.10, FB_TOP+0.07, -0.43]), 150, 'Right', 8); P['kneeR'] = np.array([0, -1.0, 0.35]); P['toefollowR'] = True
+    for k, sd, sg in (('L', 'Left', 1), ('R', 'Right', -1)):
+        S = shoulder(P, sd)
+        P['grip'+k] = S+REACH*0.97*nz(np.array([sg*0.06, -1, 0.03]))
+        P['elbow'+k] = np.array([sg*0.2, 0, -1.0]); P['palm'+k] = np.array([-sg*1.0, 0, 0]); P['axis'+k] = np.array([0, 0, 1.0])
+    return P
+animate('bulgarian_split_squat', [(0, dict(s=0)), (0.35, dict(s=0)), (1.5, dict(s=1)), (1.7, dict(s=1)), (2.8, dict(s=0))],
+        props_fn=lambda c, N: [(FB_BSS, 'show', None)]+dumbbell_track(c, N), grip=True, fn=bss_fn)
+
+# ---------------- ягодичный мост со штангой (hip thrust) ----------------
+HT_ZB = -0.40                                                    # центр скамьи (стоит поперёк)
+FB_HT = flat_bench('FlatBenchThrust', z=HT_ZB, across=True)
+HT_C = np.array([0, FB_TOP-0.01, HT_ZB+0.14])                    # край скамьи под лопатками
+def ht_body(s, feet=None):
+    tilt = 38*(1-s)
+    P = dict(pelvis=(-(90-tilt)+4*s, 0, 0), spine=(-4*s, 0, 0), neck=12+22*s, head=6, toe=12, kneeout=8, hips=(0, 0, 0))
+    P['footL'] = feet or (0.18, 0.6); P['footR'] = (-P['footL'][0], P['footL'][1])
+    W = body_W(P); H = W('Hips')[:3, 3]; S2 = W('Spine2')[:3, 3]; U_ = nz(S2-H); F_ = nz(np.cross([1, 0, 0], U_))
+    P['hips'] = tuple(HT_C+F_*0.105-U_*0.04-(S2-H))
+    return P
+_P = ht_body(1.0); _W = body_W(_P); _hj = _W('LeftUpLeg')[:3, 3]; _la = LIMB[('Left', 'leg')]['la']
+_knee_z = _hj[2]+_la*0.97
+HT_FEET = (0.19, _knee_z+0.10)
+print('  hip thrust: hips top', np.round(_P['hips'], 3), 'feet z %.2f' % HT_FEET[1])
+def ht_fn(P):
+    s = P['s']; P.update(ht_body(s, HT_FEET))
+    Rp = euler(*P['pelvis']); H = np.array(P['hips'])
+    bar = H+Rp@np.array([0, -0.07, 0.205+0.035*(1-s)])                       # гриф лежит в тазобедренном сгибе
+    P['_bar'] = bar
+    for k, sg in (('L', 1), ('R', -1)):
+        P['grip'+k] = bar+np.array([sg*0.34, 0, 0])
+        P['elbow'+k] = np.array([sg*0.6, -1.0, 0.0]); P['axis'+k] = np.array([1.0, 0, 0]); P['palm'+k] = np.array([0, -1.0, 0.3])
+    return P
+_b0 = ht_fn(dict(s=0.0))['_bar']; print('  hip thrust bar bottom y %.3f (plates %.3f)' % (_b0[1], _b0[1]-PLATE_R))
+animate('hip_thrust', [(0, dict(s=0)), (0.3, dict(s=0)), (1.1, dict(s=1)), (1.5, dict(s=1)), (2.6, dict(s=0))],
+        props_fn=lambda c, N: [(FB_HT, 'show', None)]+bar_track(c, N), grip=True, fn=ht_fn)
