@@ -564,11 +564,11 @@
           <div class="seg who" role="group" aria-label="${esc(t.character)}">
             ${['m', 'f'].map(v => `<button type="button" data-who="${v}" aria-pressed="${S.who === v}">${esc(v === 'm' ? t.male : t.female)}</button>`).join('')}
           </div>
-          <div class="seg views" role="group" aria-label="${esc(t.view)}">
-            ${['auto', 'front', 'side', 'back'].map(v => `<button type="button" data-view="${v}" aria-pressed="${v === 'auto'}">${esc(t.views[v])}</button>`).join('')}
-          </div>
           ${md.variants.length > 1 ? `<div class="seg variants" role="group" aria-label="${esc(t.variant)}">${md.variants.map((v, i) =>
             `<button type="button" data-anim="${v.anim}" aria-pressed="${i === 0}">${esc(t.variants[v.label] || v.label)}</button>`).join('')}</div>` : ''}
+        </div>
+        <div class="seg views" role="group" aria-label="${esc(t.view)}">
+          ${['auto', 'front', 'side', 'back'].map(v => `<button type="button" data-view="${v}" aria-pressed="${v === 'auto'}">${esc(t.views[v])}</button>`).join('')}
         </div>
         <div class="player">
           <button type="button" class="pbtn" id="pp" aria-label="${esc(t.pause)}" title="${esc(t.pause)}">

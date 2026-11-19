@@ -348,7 +348,10 @@ ul.grid { list-style: none; margin: 0; padding: 0; }
 }
 .stage model-viewer { display: block; width: 100%; height: 100%; background: transparent; --poster-color: transparent; }
 .stage .hint { position: absolute; top: 16px; right: 16px; font: 600 12px var(--f-mono); color: var(--muted); background: var(--surface); padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); }
-.stage-top { position: absolute; left: 16px; top: 16px; right: 140px; display: flex; flex-wrap: wrap; gap: 8px; }
+.stage-top { position: absolute; left: 16px; top: 16px; right: 140px; display: flex; flex-wrap: wrap; gap: 8px; pointer-events: none; }
+.stage-top > * { pointer-events: auto; }
+.stage .seg.views { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); flex-direction: column; flex-wrap: nowrap; border-radius: 22px; }   /* выбор ракурса — столбиком справа */
+.stage .seg.views button { text-align: center; }
 .stage .seg { position: static; display: inline-flex; padding: 4px; gap: 2px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); flex-wrap: wrap; }
 .stage .seg button { border: 0; background: transparent; padding: 9px 16px; border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--muted); }
 .stage .seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
@@ -378,6 +381,8 @@ ul.grid { list-style: none; margin: 0; padding: 0; }
   .speed { margin-left: auto; }
   .stage .hint { display: none; }                          /* подсказку «тяни» на телефоне не показываем — меньше всего поверх модели */
   .stage-top { right: 16px; }
+  .stage .seg.views { right: 10px; top: 46%; border-radius: 18px; }
+  .stage .seg.views button { padding: 7px 10px; font-size: 12px; }
   .stage { height: clamp(380px, 72svh, 640px); }
 }
 .stage.flat { display: grid; place-items: center; padding: 28px; height: auto; min-height: 380px; }
