@@ -11,6 +11,14 @@
     var phone = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     if (MV) MV.minimumRenderScale = phone ? 0.85 : 1;
   });
+  /* у model-viewer внутри есть своя белая рамка фокуса (после клика или двойного нажатия обводит всё 3D-окно) — убираем */
+  function noFocusFrame(mv) {
+    if (!window.customElements) return;
+    customElements.whenDefined('model-viewer').then(function () {
+      var ui = mv.shadowRoot && mv.shadowRoot.querySelector('.userInput');
+      if (ui) ui.style.outline = 'none';
+    });
+  }
   const LANGS = ['sk', 'en', 'uk', 'ru'];
   const DEFAULT_LANG = 'sk';
   const app = document.getElementById('app');
@@ -631,7 +639,7 @@
       ${exNav(ex)}
     </article>`;
     const mv = document.getElementById('mv');
-    if (mv) setupPlayer(mv, ex);
+    if (mv) { setupPlayer(mv, ex); noFocusFrame(mv); }
     setupDetail(ex);
   }
 
